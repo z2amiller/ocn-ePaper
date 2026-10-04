@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "LowPower") (type "KiCad") (uri "${KIPRJMOD}/lib/LowPower.kicad_sym") (options "") (descr "Board-specific symbols, vendored from kicad-lowpower-lib"))
+)

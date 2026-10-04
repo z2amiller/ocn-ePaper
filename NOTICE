@@ -1,0 +1,22 @@
+Copyright 2026 Andy Miller
+
+This project describes Open Hardware and is licensed under the CERN Open
+Hardware Licence Version 2 - Permissive (CERN-OHL-P v2). See the LICENSE
+file for the full text, or https://ohwr.org/cern_ohl_p_v2.txt
+
+You may redistribute and modify this documentation and make products using
+it under the terms of the CERN-OHL-P v2.
+
+This documentation is distributed WITHOUT ANY EXPRESS OR IMPLIED WARRANTY,
+INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS FOR A
+PARTICULAR PURPOSE. Please see the CERN-OHL-P v2 for applicable conditions.
+
+
+ORIGIN
+------
+
+The schematic, PCB layout, and the symbols and footprints in lib/ are
+original work. The footprints follow the manufacturers' published drawings
+(Littelfuse 59170, MYOUNG BH-123A-A1CJ002, Good Display GDEY0213B74 and
+Hirose FH34SRJ-24S-0.5SH) and the MSP430FR2111 pinout follows TI datasheet
+SLASE78; they contain no third-party design files.
