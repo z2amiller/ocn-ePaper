@@ -12,7 +12,7 @@
 //
 // The panel's RAM is portrait: rows of 122 pixels, 250 rows. So each RAM row is one column of the landscape
 // picture, and one row of the portrait one. With FLIP=0, RAM row 0 is the landscape picture's right-hand
-// column (the portrait picture's top row) and a row's first pixel is the landscape top (the portrait left);
+// column (the portrait picture's bottom row) and a row's first pixel is the landscape top (the portrait right);
 // FLIP=1 turns both pictures through 180 degrees. Neither mirrors them: the RAM order is the one GxEPD2 uses
 // for this panel.
 #include <string.h>
@@ -228,6 +228,13 @@ static __attribute__((unused)) void counting_column(const struct screen *s, int1
 #if STORED_SCREEN
 // ---------- the stored screen, a portrait row at a time ----------
 // The same strokes as above, transposed: a horizontal stroke across one row, a vertical stroke's slice of it.
+// Read with the MAGNET DISABLE end at the bottom, portrait row y is landscape column y and portrait column c is
+// landscape row H - 1 - c: the counting screen's picture turned 90 degrees clockwise.
+static void sblack(uint8_t *out, int16_t a, int16_t b)
+{
+    black(out, H - 1 - b, H - 1 - a);
+}
+
 
 // Row v (0..dh-1) of a digit whose left edge is column x0.
 static void digit_row(uint8_t *out, const struct geom *g, uint8_t s, int16_t x0, int16_t v)
@@ -238,18 +245,18 @@ static void digit_row(uint8_t *out, const struct geom *g, uint8_t s, int16_t x0,
     for (uint8_t i = 0; i < 3; i++) {                           // horizontal strokes: d rows off the centre line
         if ((s & seg[i]) && v >= yc[i] - ht && v < yc[i] + ht) {
             int16_t d = v < yc[i] ? yc[i] - 1 - v : v - yc[i];
-            black(out, x0 + ht + GAP + d + 1, x0 + xr - GAP - d - 1);
+            sblack(out, x0 + ht + GAP + d + 1, x0 + xr - GAP - d - 1);
         }
     }
     int16_t up = min3(ht, v - (ht + GAP), (ym - GAP) - v);     // vertical strokes: their half-width on this row
     int16_t lo = min3(ht, v - (ym + GAP), (yb - GAP) - v);
     if (up > 0) {
-        if (s & SF) black(out, x0 + ht - up, x0 + ht + up - 1);
-        if (s & SB) black(out, x0 + xr - up, x0 + xr + up - 1);
+        if (s & SF) sblack(out, x0 + ht - up, x0 + ht + up - 1);
+        if (s & SB) sblack(out, x0 + xr - up, x0 + xr + up - 1);
     }
     if (lo > 0) {
-        if (s & SE) black(out, x0 + ht - lo, x0 + ht + lo - 1);
-        if (s & SC) black(out, x0 + xr - lo, x0 + xr + lo - 1);
+        if (s & SE) sblack(out, x0 + ht - lo, x0 + ht + lo - 1);
+        if (s & SC) sblack(out, x0 + xr - lo, x0 + xr + lo - 1);
     }
 }
 
@@ -259,7 +266,7 @@ static void text_row(uint8_t *out, const uint8_t *g, uint8_t n, int16_t x0, int1
     uint8_t b = (uint8_t)(v / S);
     for (uint8_t i = 0; i < n; i++) {
         for (uint8_t c = 0; c < font_w[g[i]]; c++) {
-            if (font[g[i]][c] & (1u << b)) black(out, x0 + c * S, x0 + c * S + S - 1);
+            if (font[g[i]][c] & (1u << b)) sblack(out, x0 + c * S, x0 + c * S + S - 1);
         }
         x0 += (font_w[g[i]] + 1) * S;
     }
@@ -268,13 +275,13 @@ static void text_row(uint8_t *out, const uint8_t *g, uint8_t n, int16_t x0, int1
 // Row v (0..13) of the battery gauge with its left edge at column x0.
 static void battery_row(uint8_t *out, uint16_t cv, int16_t x0, int16_t v)
 {
-    if (v >= 4 && v <= 9) black(out, x0 + 26, x0 + 27);         // terminal
-    if (v < 2 || v >= 12) { black(out, x0, x0 + 25); return; }
-    black(out, x0, x0 + 1);
-    black(out, x0 + 24, x0 + 25);
+    if (v >= 4 && v <= 9) sblack(out, x0 + 26, x0 + 27);         // terminal
+    if (v < 2 || v >= 12) { sblack(out, x0, x0 + 25); return; }
+    sblack(out, x0, x0 + 1);
+    sblack(out, x0 + 24, x0 + 25);
     if (v >= 3 && v <= 10) {
         uint8_t n = bars(cv);
-        for (int16_t b0 = 3; n--; b0 += 5) black(out, x0 + b0, x0 + b0 + 3);
+        for (int16_t b0 = 3; n--; b0 += 5) sblack(out, x0 + b0, x0 + b0 + 3);
     }
 }
 
@@ -287,16 +294,16 @@ static void stored_row(const struct screen *s, int16_t y, uint8_t *out)
         }
     }
     if ((y >= small.dot1_y && y < small.dot1_y + small.dot) || (y >= small.dot2_y && y < small.dot2_y + small.dot)) {
-        black(out, small.colon_x, small.colon_x + small.dot - 1);
+        sblack(out, small.colon_x, small.colon_x + small.dot - 1);
     }
     if (y >= PH_Y0 && y <= PH_Y1) {                             // placeholder: two-pixel outline, 45-degree hatching
         if (y < PH_Y0 + 2 || y > PH_Y1 - 2) {
-            black(out, PH_X0, PH_X1);
+            sblack(out, PH_X0, PH_X1);
         } else {
-            black(out, PH_X0, PH_X0 + 1);
-            black(out, PH_X1 - 1, PH_X1);
+            sblack(out, PH_X0, PH_X0 + 1);
+            sblack(out, PH_X1 - 1, PH_X1);
             for (int16_t x = PH_X0 + 2; x < PH_X1 - 1; x++) {
-                if (((x + y) & 15) == 0) black(out, x, x);
+                if (((x + y) & 15) == 0) sblack(out, x, x);
             }
         }
     }
@@ -319,11 +326,11 @@ void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
     int16_t x = W - 1 - row;
 #endif
 #if STORED_SCREEN == 2                                          // a stored-screen-only build (SLEEPMOCK)
-    stored_row(s, W - 1 - x, out);                              // portrait row = W - 1 - landscape column
+    stored_row(s, x, out);                                      // portrait row = landscape column
 #else
 #if STORED_SCREEN
     if (s->stored) {
-        stored_row(s, W - 1 - x, out);
+        stored_row(s, x, out);
         return;
     }
 #endif
