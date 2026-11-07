@@ -7,8 +7,29 @@ last count when the board powers down.
 Adapted from the [ocn-LCD](https://github.com/z2amiller/ocn-LCD) firmware, which does the same on a segment
 LCD. The build is about 1.9 KB; the FR2111 has 3,712 bytes of FRAM and 1 KB of RAM.
 
-Status: written and built, not yet run on a board. Two things only the first board can settle: which way up
-the panel's picture comes out (see `FLIP` below), and the current it actually draws.
+Status: running on the first board (2026-11-06). The default orientation reads upright with the MAGNET
+DISABLE end on the right.
+
+## Measured on the first board
+
+A Nordic PPK2 supplying 3.0 V in place of the cell, on Q1's side of R2, with nothing on J1. That board has
+1N4148WS diodes in the booster (D1-D3) in place of the specified 1N5819WS.
+
+| | Charge | Time | Peak |
+|---|---|---|---|
+| Partial update (each minute) | 1.04 mC | 0.8 s | 58 mA |
+| Full refresh (every sixth update) | 3.25 mC | 2.3 s | 59 mA |
+| Power-up, including the crystal start and a full refresh | 3.44 mC | 2.4 s | 59 mA |
+| Asleep between updates | about 0.4 µA | | |
+
+That averages about 24 µA over the six-minute cycle of five partial updates and a full refresh, or about
+7 years of nonstop counting on a 1,500 mAh CR123A. The updates are nearly all of it: one partial update
+costs as much as about 40 minutes asleep, so the update interval is the lever. The sleep figure is
+approximate, because the reading is still settling back from each update's 58 mA when the next one comes.
+
+The low sleep current makes the hold-up long. The ~20 µF after the magnet switch holds the board above the
+supervisor's ~1.7 V for about a minute at 0.4 µA, so a magnet held on for less than that may not restart
+the count (the next minute's update, which the capacitors can't feed, does stop it).
 
 ## How it works
 
