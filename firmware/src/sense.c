@@ -12,11 +12,17 @@
 #define CAL_15V_30C (*(const uint16_t *)0x1A1A)    // TLV: sensor reading at 30 C, 1.5 V reference
 #define CAL_15V_85C (*(const uint16_t *)0x1A1C)    // TLV: sensor reading at 85 C
 
+// Switches the reference (and the temperature sensor) on and lets them settle: a fixed wait as TI's
+// temperature example does (400 us), then REFGENRDY. The temperature read at power-up still comes out about
+// 3 C high on the first board (23 C from the first minute on); the wait didn't change that. A guess: the
+// bandgap behind the reference has only just started after a power-up, while between wakes the supervisor
+// keeps it running.
 static void ref_on(uint16_t extra)
 {
     PMMCTL0_H = PMMPW_H;
     PMMCTL2 |= INTREFEN | extra;
     PMMCTL0_H = 0;
+    __delay_cycles(3200);                        // ~400 us at 8 MHz
     for (uint16_t i = 0; i < 2000 && !(PMMCTL2 & REFGENRDY); i++) {
     }
 }

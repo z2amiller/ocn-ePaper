@@ -66,7 +66,8 @@ do:
   two from 2.5, one from 2.3, and none below.
 - **Temperature.** The chip's own sensor, read at each wake and scaled between TI's factory calibration
   readings at 30 and 85 °C (stored in the chip). The chip sleeps almost all the time, so it sits at the
-  temperature around it.
+  temperature around it. On the first board it read 23 °C from the first minute on, in a room at about
+  22 °C, but 26 °C on the power-up screen, every time; the cause isn't pinned down (see `sense.c`).
 
 The status line also settles which way up the panel is, which 00:00 alone doesn't.
 
