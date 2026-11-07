@@ -6,9 +6,13 @@
 // again from main(), and SYSRSTIV says it was a wake rather than a power-up. RAM doesn't survive, so the count
 // lives in backup memory. The panel holds its picture with no power at all, so it sleeps too between updates.
 //
-// Each minute is a partial update (about half a second at ~3.5 mA); after every FULL_EVERY of those comes a
-// full refresh (about 3.5 s), which clears the ghosting partial updates leave. 99:59 is drawn with a full
-// refresh, then the RTC stops and nothing wakes the chip again.
+// Each minute is a partial update (about 0.8 s, 1 mC); after every FULL_EVERY of those comes a full refresh
+// (about 2.3 s), which clears the ghosting partial updates leave. 99:59 is drawn with a full refresh, then
+// the RTC stops and nothing wakes the chip again.
+//
+// Under the count, a status line shows the battery voltage and the chip's temperature. The temperature is
+// read at each wake, just before drawing. The battery is read in the middle of each update, while the panel's
+// booster loads it, and shown at the next update; at power-up it's read before the first drawing.
 //
 // Power-up (the magnet coming off the board, or the programmer's supply coming back) starts from 00:00 with a
 // full refresh. When the magnet goes back on, the board stops a few seconds later and the panel keeps the last
@@ -19,6 +23,7 @@
 #include <msp430.h>
 #include <stdint.h>
 #include "epd.h"
+#include "sense.h"
 
 #ifndef FAST
 #define FAST 0
@@ -37,9 +42,13 @@
 #define TICKS_PER_COUNT (FAST ? 32 : 60 * 32)
 
 // Backup memory (kept in LPM3.5): bytes 0-3 the digits as BCD, tens of hours first; byte 4 the partial
-// updates since the last full refresh.
+// updates since the last full refresh; 6-7 the latest battery reading; 16-18 the battery and temperature the
+// panel shows now, which the next partial update needs as its "old" picture. (DIAG builds use 8-15.)
 #define BK          ((volatile uint8_t *)BKMEM_BASE)
 #define BK_PARTIALS (BK[4])
+#define BK_VBAT     (*(volatile uint16_t *)(BKMEM_BASE + 6))
+#define BK_SHOWN_V  (*(volatile uint16_t *)(BKMEM_BASE + 16))
+#define BK_SHOWN_T  (*(volatile int8_t *)(BKMEM_BASE + 18))
 
 static volatile uint8_t ticks;          // RTC interrupts not yet counted
 
@@ -131,6 +140,19 @@ static uint8_t advance(uint8_t d[4])
     return 1;
 }
 
+// Runs in the middle of each update: the battery under the booster's load, for the next screen.
+static void read_battery(void)
+{
+    BK_VBAT = sense_vcc_cv();
+}
+
+// Remembers the status line the panel now shows.
+static void show_status(const struct screen *s)
+{
+    BK_SHOWN_V = s->vbat_cv;
+    BK_SHOWN_T = s->temp_c;
+}
+
 // The supply supervisor (SVSH) stays on through LPM3.5, at about 0.24 uA. It is what makes the magnet a clean
 // reset: once the hold-up capacitors fall below ~1.8 V it resets the chip, so taking the magnet off powers up
 // from 00:00. Without it the brownout reset is only guaranteed if the supply falls below 0.1 V first (FR2111
@@ -148,6 +170,7 @@ static void sleep_lpm35(void)
 int main(void)
 {
     WDTCTL = WDTPW | WDTHOLD;
+    SFRRPCR = SYSRSTRE | SYSRSTUP;               // RST is a reset with its internal pull-up: R1 and C11 can be left off
     uint8_t woke = woke_from_lpm35();
 
     gpio_init();
@@ -158,26 +181,31 @@ int main(void)
     // LOOP=1 bench build: full refreshes back to back, 88:88 then 00:00, so a meter can catch the booster's
     // voltages. Never counts; don't leave it on a cell.
     {
-        static const uint8_t eights[4] = {8, 8, 8, 8}, zeros[4] = {0, 0, 0, 0};
+        static const struct screen eights = {{8, 8, 8, 8}, 888, 88}, zeros = {{0, 0, 0, 0}, 0, TEMP_NONE};
         __enable_interrupt();
         for (;;) {
-            epd_show(eights, eights, 1);
-            epd_show(zeros, zeros, 1);
+            epd_show(&eights, &eights, 1, 0);
+            epd_show(&zeros, &zeros, 1, 0);
         }
     }
 #endif
 
-    uint8_t d[4], old[4];
+    struct screen now, old;
     if (!woke) {
         const uint8_t start[4] = {START / 1000 % 10, START / 100 % 10, START / 10 % 10, START % 10};
         save_digits(start);
         BK_PARTIALS = 0;
         if (!at_end(start)) {
-            RTCMOD = TICKS_PER_COUNT - 1;        // counting starts now, before the 3.5 s first refresh
+            RTCMOD = TICKS_PER_COUNT - 1;        // counting starts now, before the first refresh
             RTCCTL = RTCSS__XT1CLK | RTCSR | RTCPS__1024 | RTCIE;
         }
+        BK_VBAT = sense_vcc_cv();                // unloaded, so the first screen has a reading
+        load_digits(now.d);
+        now.vbat_cv = BK_VBAT;
+        now.temp_c = sense_temp_c();
         __enable_interrupt();
-        epd_show(start, start, 1);
+        epd_show(&now, &now, 1, read_battery);
+        show_status(&now);
     } else {
         __enable_interrupt();                    // the RTC interrupt that woke us runs now
         __no_operation();
@@ -192,17 +220,22 @@ int main(void)
         __enable_interrupt();
         if (!pending) break;
 
-        load_digits(d);
-        for (uint8_t i = 0; i < 4; i++) old[i] = d[i];
-        if (!advance(d)) {
+        load_digits(now.d);
+        for (uint8_t i = 0; i < 4; i++) old.d[i] = now.d[i];
+        if (!advance(now.d)) {
             RTCCTL = 0;                          // frozen: no more wakes
             break;
         }
-        save_digits(d);
-        uint8_t full = at_end(d) || BK_PARTIALS >= FULL_EVERY;
+        save_digits(now.d);
+        old.vbat_cv = BK_SHOWN_V;                // what the panel shows now, for the partial update
+        old.temp_c = BK_SHOWN_T;
+        now.vbat_cv = BK_VBAT;
+        now.temp_c = sense_temp_c();
+        uint8_t full = at_end(now.d) || BK_PARTIALS >= FULL_EVERY;
         BK_PARTIALS = full ? 0 : BK_PARTIALS + 1;
-        epd_show(old, d, full);
-        if (at_end(d)) {
+        epd_show(&old, &now, full, read_battery);
+        show_status(&now);
+        if (at_end(now.d)) {
             RTCCTL = 0;                          // 99:59 is on the panel, cleanly: no more wakes
             break;
         }

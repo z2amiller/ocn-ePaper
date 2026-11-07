@@ -1,0 +1,1365 @@
+{
+  "version": 1,
+  "generations": [
+    {
+      "generation_id": "6ac21aee1749c494c6ad54aaaa5cb8f2b18f26ccbcf72c6134654d6270308dae",
+      "database": "jlcpcb/project.db",
+      "source_digests": [
+        "8519a58d7ad2c6ab47472c05b6d55812fbf9151b26b1cf8205dbddc3e2cac3a0"
+      ],
+      "observations": [
+        {
+          "board_name": "ocn-ePaper.kicad_pcb",
+          "rows": [
+            {
+              "reference": "C16",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "a27b5726-b61d-4d6c-9b37-e05047976d78"
+              ],
+              "identity": [
+                "C16",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C15",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "cbf2c141-532d-419b-8a1e-f89d2c401252"
+              ],
+              "identity": [
+                "C15",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C14",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "d8bce84b-46c2-4022-bc8b-f5bb4715c105"
+              ],
+              "identity": [
+                "C14",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C13",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7b69585e-6b9d-4349-b311-f563bf29d363"
+              ],
+              "identity": [
+                "C13",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "Y1",
+              "legacy_value": "C32346",
+              "native_value": "C32346",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "d30697ef-1a04-4835-af09-630845471920"
+              ],
+              "identity": [
+                "Y1",
+                "32.768k",
+                "Crystal_SMD_3215-2Pin_3.2x1.5mm",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "SW1",
+              "legacy_value": "C315909",
+              "native_value": "C315909",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "6266cae1-6a74-49d8-9b4a-ff87ae13b8cb"
+              ],
+              "identity": [
+                "SW1",
+                "REED (NO)",
+                "SW_SPST_REED_Littelfuse_59170_GullWing",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "R2",
+              "legacy_value": "C17928",
+              "native_value": "C17928",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "b68dc107-245a-4ef4-92da-3d7d7966da1a"
+              ],
+              "identity": [
+                "R2",
+                "1R",
+                "R_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "R1",
+              "legacy_value": "C25819",
+              "native_value": "C25819",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "56e23d40-a468-4ea1-9b5d-14f135cb3a66"
+              ],
+              "identity": [
+                "R1",
+                "47K",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "J1",
+              "legacy_value": "",
+              "native_value": null,
+              "status": "ignored",
+              "disposition": "invalid_legacy",
+              "component_ids": [
+                "f32a8761-88bd-4017-a1a5-7beb96c0c880"
+              ],
+              "identity": [
+                "J1",
+                "PROG",
+                "PinHeader_1x06_P2.54mm_Vertical",
+                false,
+                false
+              ],
+              "reason": "legacy value is not a valid LCSC ID",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C11",
+              "legacy_value": "C1588",
+              "native_value": "C1588",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "e41299fa-c9d8-4fb6-bcec-9804fe8b741f"
+              ],
+              "identity": [
+                "C11",
+                "1n",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C10",
+              "legacy_value": "C1648",
+              "native_value": "C1648",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "f46e6c9c-8ca9-468e-b45e-652cf30120ac"
+              ],
+              "identity": [
+                "C10",
+                "20p",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C9",
+              "legacy_value": "C1648",
+              "native_value": "C1648",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "ed2c07fc-66d6-4b59-a43f-8cced55897c4"
+              ],
+              "identity": [
+                "C9",
+                "20p",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C5",
+              "legacy_value": "C14663",
+              "native_value": "C14663",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "26c8e9b5-a899-413e-a220-c959581e9ddb"
+              ],
+              "identity": [
+                "C5",
+                "100n",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C4",
+              "legacy_value": "C14663",
+              "native_value": "C14663",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "0dee15b3-828c-4151-93d4-4f6040a8b642"
+              ],
+              "identity": [
+                "C4",
+                "100n",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C3",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7ee3d19f-b337-4986-912a-85db2f49a91f"
+              ],
+              "identity": [
+                "C3",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C2",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "2f208f8e-fdd5-4560-97ad-eee40f5e9b9c"
+              ],
+              "identity": [
+                "C2",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C1",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "251a2365-e826-49e4-aec2-84480eb57aa6"
+              ],
+              "identity": [
+                "C1",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "BT1",
+              "legacy_value": "C5290177",
+              "native_value": "C5290177",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "10f9d305-3531-40d5-92aa-342c3fe4386b"
+              ],
+              "identity": [
+                "BT1",
+                "CR123",
+                "BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "U1",
+              "legacy_value": "C2052845",
+              "native_value": "C2052845",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7636d46c-7123-40fb-ba09-578bc025ff0f"
+              ],
+              "identity": [
+                "U1",
+                "MSP430FR2111IPW",
+                "TSSOP-16_4.4x5mm_P0.65mm",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "Q1",
+              "legacy_value": "C15127",
+              "native_value": "C15127",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "4670133e-1d5b-4abf-a13c-20c58b25663f"
+              ],
+              "identity": [
+                "Q1",
+                "AO3401A",
+                "SOT-23",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "R3",
+              "legacy_value": "C7250",
+              "native_value": "C7250",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "e87cc1d5-5054-4aac-a253-ed79613d9e36"
+              ],
+              "identity": [
+                "R3",
+                "10M",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "TP3",
+              "legacy_value": "",
+              "native_value": null,
+              "status": "ignored",
+              "disposition": "invalid_legacy",
+              "component_ids": [
+                "1a21988b-aa62-48bf-96ea-9f66f9bf9d3f"
+              ],
+              "identity": [
+                "TP3",
+                "3V",
+                "TestPoint_Pad_1.5x1.5mm",
+                false,
+                false
+              ],
+              "reason": "legacy value is not a valid LCSC ID",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "DS2",
+              "legacy_value": "C324726",
+              "native_value": "C324726",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "f4b376fa-6b94-44da-871c-5b83b72b382d"
+              ],
+              "identity": [
+                "DS2",
+                "GDEY0213B74",
+                "EPD_GDEY0213B74_FoldedUnder_Hirose_FH34SRJ-24S-0.5SH",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C12",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "5fb49a9d-a834-41a9-9945-18b8a4581ae1"
+              ],
+              "identity": [
+                "C12",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C8",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7b1a010e-50ef-4102-b604-a99dea5a74f8"
+              ],
+              "identity": [
+                "C8",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C7",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "2623c4b1-964d-48df-8af5-8ad1d5a71d75"
+              ],
+              "identity": [
+                "C7",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C6",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "dc732d84-cbbf-4537-a018-1726a709f229"
+              ],
+              "identity": [
+                "C6",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "Q2",
+              "legacy_value": "C469327",
+              "native_value": "C469327",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "88fb2d58-e4d1-41ef-82af-25235880dac8"
+              ],
+              "identity": [
+                "Q2",
+                "SI1308EDL",
+                "SOT-323_SC-70",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "R5",
+              "legacy_value": "C22939",
+              "native_value": "C22939",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "6e47b85b-ee31-4752-891f-978dfa604128"
+              ],
+              "identity": [
+                "R5",
+                "2R2",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "R4",
+              "legacy_value": "C22935",
+              "native_value": "C22935",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "4f982f2b-ccd8-4309-be9d-c6952e59bfdb"
+              ],
+              "identity": [
+                "R4",
+                "1M",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "L1",
+              "legacy_value": "C167888",
+              "native_value": "C167888",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "64126d76-d893-4ab2-9cb4-d9a7ce85e542"
+              ],
+              "identity": [
+                "L1",
+                "47u",
+                "L_Changjiang_FNR4030S",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "D3",
+              "legacy_value": "C191023",
+              "native_value": "C191023",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "cb50100a-d80d-4c5d-943f-d3d400391ffb"
+              ],
+              "identity": [
+                "D3",
+                "5819WS",
+                "D_SOD-323F",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "D2",
+              "legacy_value": "C191023",
+              "native_value": "C191023",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "2f936fff-61d8-4628-ac09-d2836a0167e3"
+              ],
+              "identity": [
+                "D2",
+                "5819WS",
+                "D_SOD-323F",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "D1",
+              "legacy_value": "C191023",
+              "native_value": "C191023",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "1ced15d7-1cdd-4a03-ac86-cb013ca0924e"
+              ],
+              "identity": [
+                "D1",
+                "5819WS",
+                "D_SOD-323F",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C17",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "6454a54e-eccf-476a-af2e-a5053dace886"
+              ],
+              "identity": [
+                "C17",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            },
+            {
+              "reference": "C18",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "48044881-a47b-4414-85df-fbb73530f023"
+              ],
+              "identity": [
+                "C18",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence",
+              "provenance_order": 1791532958408451000
+            }
+          ]
+        },
+        {
+          "board_name": "ocn-ePaper.kicad_pcb",
+          "rows": [
+            {
+              "reference": "C16",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "a27b5726-b61d-4d6c-9b37-e05047976d78"
+              ],
+              "identity": [
+                "C16",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C15",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "cbf2c141-532d-419b-8a1e-f89d2c401252"
+              ],
+              "identity": [
+                "C15",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C14",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "d8bce84b-46c2-4022-bc8b-f5bb4715c105"
+              ],
+              "identity": [
+                "C14",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C13",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7b69585e-6b9d-4349-b311-f563bf29d363"
+              ],
+              "identity": [
+                "C13",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "Y1",
+              "legacy_value": "C32346",
+              "native_value": "C32346",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "d30697ef-1a04-4835-af09-630845471920"
+              ],
+              "identity": [
+                "Y1",
+                "32.768k",
+                "Crystal_SMD_3215-2Pin_3.2x1.5mm",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "SW1",
+              "legacy_value": "C315909",
+              "native_value": "C315909",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "6266cae1-6a74-49d8-9b4a-ff87ae13b8cb"
+              ],
+              "identity": [
+                "SW1",
+                "REED (NO)",
+                "SW_SPST_REED_Littelfuse_59170_GullWing",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "R2",
+              "legacy_value": "C17928",
+              "native_value": "C17928",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "b68dc107-245a-4ef4-92da-3d7d7966da1a"
+              ],
+              "identity": [
+                "R2",
+                "1R",
+                "R_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "R1",
+              "legacy_value": "C25819",
+              "native_value": "C25819",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "56e23d40-a468-4ea1-9b5d-14f135cb3a66"
+              ],
+              "identity": [
+                "R1",
+                "47K",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "J1",
+              "legacy_value": "",
+              "native_value": null,
+              "status": "ignored",
+              "disposition": "invalid_legacy",
+              "component_ids": [
+                "f32a8761-88bd-4017-a1a5-7beb96c0c880"
+              ],
+              "identity": [
+                "J1",
+                "PROG",
+                "PinHeader_1x06_P2.54mm_Vertical",
+                false,
+                false
+              ],
+              "reason": "legacy value is not a valid LCSC ID"
+            },
+            {
+              "reference": "C11",
+              "legacy_value": "C1588",
+              "native_value": "C1588",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "e41299fa-c9d8-4fb6-bcec-9804fe8b741f"
+              ],
+              "identity": [
+                "C11",
+                "1n",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C10",
+              "legacy_value": "C1648",
+              "native_value": "C1648",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "f46e6c9c-8ca9-468e-b45e-652cf30120ac"
+              ],
+              "identity": [
+                "C10",
+                "20p",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C9",
+              "legacy_value": "C1648",
+              "native_value": "C1648",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "ed2c07fc-66d6-4b59-a43f-8cced55897c4"
+              ],
+              "identity": [
+                "C9",
+                "20p",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C5",
+              "legacy_value": "C14663",
+              "native_value": "C14663",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "26c8e9b5-a899-413e-a220-c959581e9ddb"
+              ],
+              "identity": [
+                "C5",
+                "100n",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C4",
+              "legacy_value": "C14663",
+              "native_value": "C14663",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "0dee15b3-828c-4151-93d4-4f6040a8b642"
+              ],
+              "identity": [
+                "C4",
+                "100n",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C3",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7ee3d19f-b337-4986-912a-85db2f49a91f"
+              ],
+              "identity": [
+                "C3",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C2",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "2f208f8e-fdd5-4560-97ad-eee40f5e9b9c"
+              ],
+              "identity": [
+                "C2",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C1",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "251a2365-e826-49e4-aec2-84480eb57aa6"
+              ],
+              "identity": [
+                "C1",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "BT1",
+              "legacy_value": "C5290177",
+              "native_value": "C5290177",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "10f9d305-3531-40d5-92aa-342c3fe4386b"
+              ],
+              "identity": [
+                "BT1",
+                "CR123",
+                "BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "U1",
+              "legacy_value": "C2052845",
+              "native_value": "C2052845",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7636d46c-7123-40fb-ba09-578bc025ff0f"
+              ],
+              "identity": [
+                "U1",
+                "MSP430FR2111IPW",
+                "TSSOP-16_4.4x5mm_P0.65mm",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "Q1",
+              "legacy_value": "C15127",
+              "native_value": "C15127",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "4670133e-1d5b-4abf-a13c-20c58b25663f"
+              ],
+              "identity": [
+                "Q1",
+                "AO3401A",
+                "SOT-23",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "R3",
+              "legacy_value": "C7250",
+              "native_value": "C7250",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "e87cc1d5-5054-4aac-a253-ed79613d9e36"
+              ],
+              "identity": [
+                "R3",
+                "10M",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "TP3",
+              "legacy_value": "",
+              "native_value": null,
+              "status": "ignored",
+              "disposition": "invalid_legacy",
+              "component_ids": [
+                "1a21988b-aa62-48bf-96ea-9f66f9bf9d3f"
+              ],
+              "identity": [
+                "TP3",
+                "3V",
+                "TestPoint_Pad_1.5x1.5mm",
+                false,
+                false
+              ],
+              "reason": "legacy value is not a valid LCSC ID"
+            },
+            {
+              "reference": "DS2",
+              "legacy_value": "C324726",
+              "native_value": "C324726",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "f4b376fa-6b94-44da-871c-5b83b72b382d"
+              ],
+              "identity": [
+                "DS2",
+                "GDEY0213B74",
+                "EPD_GDEY0213B74_FoldedUnder_Hirose_FH34SRJ-24S-0.5SH",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C12",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "5fb49a9d-a834-41a9-9945-18b8a4581ae1"
+              ],
+              "identity": [
+                "C12",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C8",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "7b1a010e-50ef-4102-b604-a99dea5a74f8"
+              ],
+              "identity": [
+                "C8",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C7",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "2623c4b1-964d-48df-8af5-8ad1d5a71d75"
+              ],
+              "identity": [
+                "C7",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C6",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "dc732d84-cbbf-4537-a018-1726a709f229"
+              ],
+              "identity": [
+                "C6",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "Q2",
+              "legacy_value": "C469327",
+              "native_value": "C469327",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "88fb2d58-e4d1-41ef-82af-25235880dac8"
+              ],
+              "identity": [
+                "Q2",
+                "SI1308EDL",
+                "SOT-323_SC-70",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "R5",
+              "legacy_value": "C22939",
+              "native_value": "C22939",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "6e47b85b-ee31-4752-891f-978dfa604128"
+              ],
+              "identity": [
+                "R5",
+                "2R2",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "R4",
+              "legacy_value": "C22935",
+              "native_value": "C22935",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "4f982f2b-ccd8-4309-be9d-c6952e59bfdb"
+              ],
+              "identity": [
+                "R4",
+                "1M",
+                "R_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "L1",
+              "legacy_value": "C167888",
+              "native_value": "C167888",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "64126d76-d893-4ab2-9cb4-d9a7ce85e542"
+              ],
+              "identity": [
+                "L1",
+                "47u",
+                "L_Changjiang_FNR4030S",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "D3",
+              "legacy_value": "C191023",
+              "native_value": "C191023",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "cb50100a-d80d-4c5d-943f-d3d400391ffb"
+              ],
+              "identity": [
+                "D3",
+                "5819WS",
+                "D_SOD-323F",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "D2",
+              "legacy_value": "C191023",
+              "native_value": "C191023",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "2f936fff-61d8-4628-ac09-d2836a0167e3"
+              ],
+              "identity": [
+                "D2",
+                "5819WS",
+                "D_SOD-323F",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "D1",
+              "legacy_value": "C191023",
+              "native_value": "C191023",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "1ced15d7-1cdd-4a03-ac86-cb013ca0924e"
+              ],
+              "identity": [
+                "D1",
+                "5819WS",
+                "D_SOD-323F",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C17",
+              "legacy_value": "C29823",
+              "native_value": "C29823",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "6454a54e-eccf-476a-af2e-a5053dace886"
+              ],
+              "identity": [
+                "C17",
+                "4.7u",
+                "C_1206_3216Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            },
+            {
+              "reference": "C18",
+              "legacy_value": "C15849",
+              "native_value": "C15849",
+              "status": "accounted",
+              "disposition": "already_matches",
+              "component_ids": [
+                "48044881-a47b-4414-85df-fbb73530f023"
+              ],
+              "identity": [
+                "C18",
+                "1u",
+                "C_0603_1608Metric",
+                false,
+                false
+              ],
+              "reason": "explicit native assignment takes precedence"
+            }
+          ]
+        }
+      ],
+      "override_messages": [],
+      "known_override_messages": [],
+      "retention_notices": {
+        "ocn-ePaper.kicad_pcb": {
+          "current_messages": [],
+          "known_messages": []
+        }
+      },
+      "retired": true
+    }
+  ]
+}

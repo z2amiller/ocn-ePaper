@@ -14,7 +14,7 @@ GCC     ?= $(TI)/msp430-gcc/bin
 SUPPORT ?= $(TI)/msp430-gcc-support-files/include
 DSLITE  ?= /Applications/ti/ccs2101/ccs/ccs_base/DebugServer/bin/DSLite
 
-SRC   = src/main.c src/epd.c src/render.c
+SRC   = src/main.c src/epd.c src/render.c src/sense.c
 BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))$(if $(DIAG),-diag)$(if $(LOOP),-loop)
 
 # Test builds. START is hhmm; leading zeros are dropped so C doesn't read it as octal.

@@ -28,6 +28,7 @@
 #define BUSY_SHORT_TICKS  TICKS(200)     // reset and SW reset (typically a few ms)
 #define BUSY_PART_TICKS   TICKS(3000)    // partial update (about 0.5 s)
 #define BUSY_FULL_TICKS   TICKS(10000)   // full refresh (about 3.5 s; longer in the cold)
+#define DURING_TICKS      TICKS(150)     // when epd_show's `during` callback runs, after the update starts
 
 static volatile uint8_t timed_out;
 
@@ -150,14 +151,14 @@ static void command(uint8_t c, const uint8_t *data, uint8_t n)
 #define CMD(c, ...) do { static const uint8_t a_[] = {__VA_ARGS__}; command((c), a_, sizeof a_); } while (0)
 #define CMD0(c) command((c), 0, 0)
 
-static void write_ram(uint8_t ram, const uint8_t d[4])
+static void write_ram(uint8_t ram, const struct screen *s)
 {
     CMD(0x4E, 0x00);                             // RAM X counter: byte 0
     CMD(0x4F, 0x00, 0x00);                       // RAM Y counter: row 0
     begin(ram);
     for (uint8_t row = 0; row < EPD_ROWS; row++) {
         uint8_t buf[EPD_ROW_BYTES];
-        render_row(d, row, buf);
+        render_row(s, row, buf);
         for (uint8_t i = 0; i < EPD_ROW_BYTES; i++) {
             spi_byte(buf[i]);
         }
@@ -165,7 +166,7 @@ static void write_ram(uint8_t ram, const uint8_t d[4])
     end();
 }
 
-uint8_t epd_show(const uint8_t old[4], const uint8_t now[4], uint8_t full)
+uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t full, void (*during)(void))
 {
     P2OUT &= ~RES;                               // hardware reset; also the way out of deep sleep
     sleep_ticks(RESET_TICKS);
@@ -201,7 +202,12 @@ uint8_t epd_show(const uint8_t old[4], const uint8_t now[4], uint8_t full)
         __delay_cycles(800);                     // ~100 us for BUSY to rise
         DG[9] = !!(P2IN & BUSY);
     }
+    if (during) {                                // a moment into the update, with the booster drawing current
+        sleep_ticks(DURING_TICKS);
+        during();
+    }
     uint8_t ok3 = wait_busy(full ? BUSY_FULL_TICKS : BUSY_PART_TICKS);
+    if (during) busy_ticks += DURING_TICKS;      // DIAG: time from the start, not from the wake
     if (DIAG) {
         DG[14] = (uint8_t)busy_ticks;
         DG[15] = (uint8_t)(busy_ticks >> 8);
