@@ -1,19 +1,21 @@
 # ocn-ePaper firmware
 
 Firmware for the ocn-ePaper board's MSP430FR2111 and its Good Display GDEY0213B74 e-paper panel. It counts
-minutes from power-up and shows HH:MM in large seven-segment digits, freezing at 99:59. The panel keeps the
-last count when the board powers down.
+minutes from power-up and shows HH:MM in large seven-segment digits, freezing at 99:59, with a status line
+under them: a battery gauge and voltage on the left, the temperature on the right. The panel keeps the last
+screen when the board powers down.
 
 Adapted from the [ocn-LCD](https://github.com/z2amiller/ocn-LCD) firmware, which does the same on a segment
-LCD. The build is about 1.9 KB; the FR2111 has 3,712 bytes of FRAM and 1 KB of RAM.
+LCD. The build is about 3.2 KB; the FR2111 has 3,712 bytes of FRAM and 1 KB of RAM.
 
-Status: running on the first board (2026-11-06). The default orientation reads upright with the MAGNET
-DISABLE end on the right.
+Status: running on the first board (2026-11-06; the status line since 2026-11-07). The default orientation
+reads upright with the MAGNET DISABLE end on the right, the status line along the bottom.
 
 ## Measured on the first board
 
 A Nordic PPK2 supplying 3.0 V in place of the cell, on Q1's side of R2, with nothing on J1. That board has
-1N4148WS diodes in the booster (D1-D3) in place of the specified 1N5819WS.
+1N4148WS diodes in the booster (D1-D3) in place of the specified 1N5819WS. Measured before the status line
+went in; its two readings per minute add well under a microcoulomb, against about 1,000 µC per update.
 
 | | Charge | Time | Peak |
 |---|---|---|---|
@@ -51,10 +53,27 @@ the count (the next minute's update, which the capacitors can't feed, does stop 
   not restart the count. (The board README's suggestion to turn it off predates this.)
 - The panel sleeps in its deep-sleep mode 2, 1 µA typical, which doesn't keep the panel's RAM. Nothing
   needs it to: every update writes both RAMs.
+- The RST pin uses the chip's internal pull-up, which the firmware turns on explicitly, so R1 and C11 can be
+  left off the board (the first board runs and programs without them).
+
+**The status line.** `sense.c` uses the ADC and the chip's internal 1.5 V reference, as TI's FR211x examples
+do:
+- **Battery.** The reference measured against the supply gives the supply: 1.5 V × 1023 / reading, averaged
+  over eight readings 1 ms apart. It is read 150 ms into each update, while the panel's booster loads the
+  cell, and shown at the next update; at power-up it is read before the first drawing. The reference is good
+  to a few percent, so this is an end-of-life warning rather than a fuel gauge, which suits a CR123A: it sits
+  near 3.0 V for most of its life and then falls away. The gauge shows four bars from 2.9 V, three from 2.7,
+  two from 2.5, one from 2.3, and none below.
+- **Temperature.** The chip's own sensor, read at each wake and scaled between TI's factory calibration
+  readings at 30 and 85 °C (stored in the chip). The chip sleeps almost all the time, so it sits at the
+  temperature around it.
+
+The status line also settles which way up the panel is, which 00:00 alone doesn't.
 
 **Drawing without a frame buffer.** The panel's frame is 250 × 122 pixels, 3.8 KB, and the FR2111 has 1 KB
-of RAM. `render.c` computes each 16-byte RAM row as it is sent, straight from the digits' geometry, so the
-firmware needs no font or picture data at all.
+of RAM. `render.c` computes each 16-byte RAM row as it is sent, straight from the digits' geometry; the only
+picture data is a 75-byte 5 × 7 font for the status line, drawn at twice size. The firmware divides with its
+own small loops rather than the compiler's library routines, which saves about 400 bytes.
 
 **Telling a wake from a power-up.** As on ocn-LCD: `SYSRSTIV` keeps every reset cause since it was last
 emptied, so the code empties it at every start-up and counts a start-up as a wake only when the LPM3.5 wake
@@ -69,8 +88,9 @@ clock locked to the crystal.
 
 - `src/main.c`: the count, the wake handling, clocks, pins and LPM3.5.
 - `src/epd.c`, `src/epd.h`: the SSD1680 driver: SPI, reset, the update sequence, the BUSY wait and deep sleep.
-- `src/render.c`, `src/render.h`: the seven-segment drawing, one RAM row at a time. Plain C, so it also
-  builds on the Mac for the preview.
+- `src/render.c`, `src/render.h`: the screen (digits and status line), one RAM row at a time. Plain C, so it
+  also builds on the Mac for the preview.
+- `src/sense.c`, `src/sense.h`: the supply voltage and the temperature from the ADC.
 - `tools/preview.c`: `make preview` draws the panel on the Mac as `build/preview.pbm`.
 - `tools/ppk.py`: drives a Nordic PPK2 as the supply and measures the current (from ocn-LCD).
 - `targets/msp430fr2111.ccxml`: the DSLite target config for a LaunchPad's eZ-FET programmer.
@@ -96,7 +116,7 @@ make flash                        # build, program, verify, hard reset
 make FLIP=1 flash                 # the picture turned through 180 degrees
 make FAST=1 START=9958 flash      # test build: one count a second, from 99:58
 make FULL_EVERY=10 flash          # ten partial updates between full refreshes instead of five
-make preview DIGITS=1234          # draw 12:34 on the Mac: build/preview.pbm
+make preview DIGITS=1234 VBAT=298 TEMP=17   # draw a screen on the Mac: build/preview.pbm
 make DIAG=1 flash                 # log each panel update in backup memory...
 make DIAG=1 readlog               # ...and read it back (halts the chip: power-cycle afterwards)
 make DIAG=1 LOOP=1 flash          # full refreshes back to back, for metering the booster

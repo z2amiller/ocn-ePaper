@@ -6,7 +6,7 @@
 #   make FLIP=1 flash                 the same picture turned through 180 degrees, if the digits come out upside down
 #   make FAST=1 START=9958 flash      test build: count once a second, starting from 99:58
 #   make FULL_EVERY=10                partial updates between full refreshes (default 5)
-#   make preview DIGITS=1234          draw the panel on this Mac: build/preview.pbm
+#   make preview DIGITS=1234 VBAT=298 TEMP=17   draw a screen on this Mac: build/preview.pbm
 
 MCU     ?= msp430fr2111
 TI      ?= $(HOME)/ti
@@ -59,10 +59,12 @@ readlog:
 
 # Host preview of the drawing code, as the panel will show it.
 DIGITS ?= 1234
+VBAT   ?= 298
+TEMP   ?= 17
 preview:
 	@mkdir -p build
 	cc -std=c11 -Wall -Wextra $(if $(FLIP),-DFLIP=$(FLIP)) -o build/preview tools/preview.c src/render.c
-	build/preview $(DIGITS) > build/preview.pbm
+	build/preview $(DIGITS) $(VBAT) $(TEMP) > build/preview.pbm
 	@echo "build/preview.pbm"
 
 # PPK2 as the supply (see tools/ppk.py): `make cycle` switches it off and on, a clean power-up like the magnet
