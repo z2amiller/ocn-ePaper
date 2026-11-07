@@ -21,7 +21,7 @@ BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-
 # Test builds. START is hhmm; leading zeros are dropped so C doesn't read it as octal.
 # DIAG=1 logs each panel update in backup memory (see src/epd.c; `make readlog`); LOOP=1 refreshes back to back.
 DEFS = $(EXTRA) $(if $(FLIP),-DFLIP=$(FLIP)) $(if $(FAST),-DFAST=1) $(if $(FULL_EVERY),-DFULL_EVERY=$(FULL_EVERY)) \
-       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) $(if $(SLEEPMOCK),-DSLEEPMOCK=1,-DSTORED_SCREEN=0) \
+       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) $(if $(SLEEPMOCK),-DSLEEPMOCK=1 -DSTORED_SCREEN=2,-DSTORED_SCREEN=0) \
        $(if $(START),-DSTART=$(shell echo '$(START)' | sed 's/^0*\([0-9]\)/\1/'))
 
 CC   = $(GCC)/msp430-elf-gcc

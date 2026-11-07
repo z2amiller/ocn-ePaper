@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
-// The screen, read landscape: 250 pixels across, 122 down. HH:MM fills the top as four bevelled
-// seven-segment digits and a colon; a status line along the bottom shows a battery gauge and its voltage on
-// the left and the temperature on the right, in a 5 x 7 font drawn at twice size. The status line also says
-// which way up the panel is, which 00:00 alone doesn't.
+// Two screens.
 //
-// The panel's RAM runs the other way (rows of 122 pixels, 250 rows), so each RAM row is one column of the
-// landscape picture. With FLIP=0, RAM row 0 is the right-hand column and a row's first pixel is the top;
-// FLIP=1 turns the picture through 180 degrees. Neither mirrors it: the RAM order is the one GxEPD2 uses for
-// this panel.
+// The counting screen, read landscape: 250 pixels across, 122 down, the MAGNET DISABLE end on the right.
+// HH:MM fills the top as four bevelled seven-segment digits and a colon; a status line along the bottom shows a
+// battery gauge and its voltage on the left and the temperature on the right, in a 5 x 7 font drawn at twice
+// size. The status line also says which way up the panel is, which 00:00 alone doesn't.
+//
+// The stored screen (STORED_SCREEN builds), read portrait: 122 across, 250 down, the MAGNET DISABLE end at the
+// bottom, for a unit stored upright. The stopped time small across the top, a placeholder for a graphic, and
+// the battery gauge and voltage at the bottom.
+//
+// The panel's RAM is portrait: rows of 122 pixels, 250 rows. So each RAM row is one column of the landscape
+// picture, and one row of the portrait one. With FLIP=0, RAM row 0 is the landscape picture's right-hand
+// column (the portrait picture's top row) and a row's first pixel is the landscape top (the portrait left);
+// FLIP=1 turns both pictures through 180 degrees. Neither mirrors them: the RAM order is the one GxEPD2 uses
+// for this panel.
 #include <string.h>
 #include "render.h"
 
@@ -15,40 +22,41 @@
 #define FLIP 0
 #endif
 #ifndef STORED_SCREEN
-#define STORED_SCREEN 1     // the stored screen; the counting firmware builds without it (see the Makefile)
+#define STORED_SCREEN 1     // 1: both screens; 0: counting only (the firmware); 2: stored only (SLEEPMOCK)
 #endif
 
-#define W   250             // landscape width (columns)
-#define H   EPD_VISIBLE     // landscape height (rows)
+#define W   250             // landscape width (columns), portrait height (rows)
+#define H   EPD_VISIBLE     // landscape height (rows), portrait width (columns)
 
-// HH:MM in one of two sizes: large on the counting screen, small on the stored screen. A digit is dw x dh
-// pixels with strokes ht * 2 thick, from row top. The segments' centre lines run between the skeleton points
-// (ht or dw - ht across; ht, dh / 2 or dh - ht down); each segment stops GAP short of a corner and is
-// bevelled at 45 degrees. The colon is two dot x dot squares from column colon_x.
+// HH:MM. A digit is dw x dh pixels with strokes ht * 2 thick, from row `top`. The segments' centre lines run
+// between the skeleton points (ht or dw - ht across; ht, dh / 2 or dh - ht down); each segment stops GAP short
+// of a corner and is bevelled at 45 degrees. The colon is two dot x dot squares from column colon_x.
 #define GAP  1
 struct geom {
     uint8_t top, dh, dw, ht;
     uint8_t x[4];           // left edges of the four digits
     uint8_t colon_x, dot, dot1_y, dot2_y;
 };
-static const struct geom big = {6, 80, 40, 5, {27, 73, 137, 183}, 121, 8, 26, 58};
-#if STORED_SCREEN
-static const struct geom small = {4, 36, 20, 3, {74, 100, 130, 156}, 123, 4, 13, 27};
+static const struct geom big = {6, 80, 40, 5, {27, 73, 137, 183}, 121, 8, 26, 58};    // landscape
 
-#endif
-
-// The stored screen's placeholder for a graphic: an outlined, lightly hatched band.
-#define PH_X0  6
-#define PH_X1  243
-#define PH_Y0  46
-#define PH_Y1  91
-
-// The status line: 5 x 7 glyphs at S times size, from row STATUS_Y.
+// The status line: 5 x 7 glyphs at S times size.
 #define S         2
-#define STATUS_Y  98
+#define STATUS_Y  98        // landscape: the status line's top row
 #define BAT_X     27        // battery gauge: 26 x 14, then its terminal
 #define VOLT_X    60        // the voltage, left-aligned
 #define TEMP_END  223       // the temperature, right-aligned to here
+
+#if STORED_SCREEN
+// The stored screen, in portrait coordinates.
+static const struct geom small = {10, 40, 22, 3, {7, 33, 67, 93}, 59, 4, 22, 38};
+#define PH_X0   6           // the placeholder for a graphic: an outlined, lightly hatched block
+#define PH_X1   115
+#define PH_Y0   64
+#define PH_Y1   200
+#define P_STAT_Y  218       // battery gauge and voltage, centred
+#define P_BAT_X   18
+#define P_VOLT_X  52
+#endif
 
 enum { SA = 0x01, SB = 0x02, SC = 0x04, SD = 0x08, SE = 0x10, SF = 0x20, SG = 0x40 };
 static const uint8_t segments[10] = {
@@ -79,15 +87,16 @@ static const uint8_t font[G_COUNT][5] = {
 };
 static const uint8_t font_w[G_COUNT] = {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 5, 5, 4, 5};
 
-// Blackens landscape rows y0..y1 (inclusive) of the current column.
-static void black(uint8_t *out, int16_t y0, int16_t y1)
+// Blackens pixels a..b (inclusive) of the current RAM row: landscape rows of the current column, or portrait
+// columns of the current row.
+static void black(uint8_t *out, int16_t a, int16_t b)
 {
-    if (y0 < 0) y0 = 0;
-    if (y1 > H - 1) y1 = H - 1;
+    if (a < 0) a = 0;
+    if (b > H - 1) b = H - 1;
 #if FLIP
-    int16_t p0 = H - 1 - y1, p1 = H - 1 - y0;
+    int16_t p0 = H - 1 - b, p1 = H - 1 - a;
 #else
-    int16_t p0 = y0, p1 = y1;
+    int16_t p0 = a, p1 = b;
 #endif
     for (int16_t p = p0; p <= p1; p++) {
         out[p >> 3] &= (uint8_t)~(0x80u >> (p & 7));
@@ -99,6 +108,8 @@ static int16_t min3(int16_t a, int16_t b, int16_t c)
     int16_t m = a < b ? a : b;
     return m < c ? m : c;
 }
+
+// ---------- the counting screen, a landscape column at a time ----------
 
 // A vertical stroke centred on column xc: at dd columns from its centre it is shortened by dd at each end.
 static void vertical(uint8_t *out, const struct geom *g, int16_t u, int16_t xc, uint8_t upper, uint8_t lower)
@@ -125,39 +136,27 @@ static void digit_column(uint8_t *out, const struct geom *g, uint8_t s, int16_t 
     vertical(out, g, u, xr, s & SB, s & SC);
 }
 
-// Column x of HH:MM drawn with geometry g.
-static void clock_column(uint8_t *out, const struct geom *g, const uint8_t d[4], int16_t x)
-{
-    for (uint8_t i = 0; i < 4; i++) {
-        int16_t u = x - g->x[i];
-        if (u >= 0 && u < g->dw && d[i] < 10) digit_column(out, g, segments[d[i]], u);
-    }
-    if (x >= g->colon_x && x < g->colon_x + g->dot) {
-        black(out, g->dot1_y, g->dot1_y + g->dot - 1);
-        black(out, g->dot2_y, g->dot2_y + g->dot - 1);
-    }
-}
-
-#if STORED_SCREEN
-// Column x of the stored screen's placeholder: a two-pixel outline, hatched at 45 degrees inside.
-static void placeholder(uint8_t *out, int16_t x)
-{
-    if (x < PH_X0 || x > PH_X1) return;
-    if (x < PH_X0 + 2 || x > PH_X1 - 2) { black(out, PH_Y0, PH_Y1); return; }
-    black(out, PH_Y0, PH_Y0 + 1);
-    black(out, PH_Y1 - 1, PH_Y1);
-    for (int16_t y = PH_Y0 + 2; y < PH_Y1 - 1; y++) {
-        if (((x + y) & 15) == 0) black(out, y, y);
-    }
-}
-#endif
-
 // How many `unit`s fit in *v, taking them off: digits without pulling in the library's division routines.
 static uint8_t take(uint16_t *v, uint16_t unit)
 {
     uint8_t q = 0;
     while (*v >= unit) { *v -= unit; q++; }
     return q;
+}
+
+// The voltage as glyphs, e.g. 2.98V.
+static void volts(uint16_t cv, uint8_t g[5])
+{
+    g[0] = take(&cv, 100);
+    g[1] = G_DOT;
+    g[2] = take(&cv, 10);
+    g[3] = (uint8_t)cv;
+    g[4] = G_V;
+}
+
+static uint8_t bars(uint16_t cv)
+{
+    return cv >= 290 ? 4 : cv >= 270 ? 3 : cv >= 250 ? 2 : cv >= 230 ? 1 : 0;
 }
 
 static int16_t text_width(const uint8_t *g, uint8_t n)
@@ -192,38 +191,26 @@ static void battery(uint8_t *out, uint16_t cv, int16_t x)
     if (u < 2 || u >= 24) { black(out, STATUS_Y, STATUS_Y + 13); return; }
     black(out, STATUS_Y, STATUS_Y + 1);
     black(out, STATUS_Y + 12, STATUS_Y + 13);
-    uint8_t bars = cv >= 290 ? 4 : cv >= 270 ? 3 : cv >= 250 ? 2 : cv >= 230 ? 1 : 0;
-    for (int16_t b0 = 3; bars--; b0 += 5) {                             // bars 4 wide, 1 apart, from u = 3
+    uint8_t n = bars(cv);
+    for (int16_t b0 = 3; n--; b0 += 5) {                                // bars 4 wide, 1 apart, from u = 3
         if (u >= b0 && u < b0 + 4) black(out, STATUS_Y + 3, STATUS_Y + 10);
     }
 }
 
-void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
+static __attribute__((unused)) void counting_column(const struct screen *s, int16_t x, uint8_t *out)
 {
-    memset(out, 0xFF, EPD_ROW_BYTES);
-#if FLIP
-    int16_t x = row;
-#else
-    int16_t x = W - 1 - row;
-#endif
-#if STORED_SCREEN
-    if (s->stored) {                             // magnet on: the stopped time small, a graphic under it
-        clock_column(out, &small, s->d, x);
-        placeholder(out, x);
-    } else
-#endif
-    {
-        clock_column(out, &big, s->d, x);
+    for (uint8_t i = 0; i < 4; i++) {
+        int16_t u = x - big.x[i];
+        if (u >= 0 && u < big.dw && s->d[i] < 10) digit_column(out, &big, segments[s->d[i]], u);
+    }
+    if (x >= big.colon_x && x < big.colon_x + big.dot) {
+        black(out, big.dot1_y, big.dot1_y + big.dot - 1);
+        black(out, big.dot2_y, big.dot2_y + big.dot - 1);
     }
     if (s->vbat_cv) {
-        uint16_t cv = s->vbat_cv > 999 ? 999 : s->vbat_cv, v = cv;
         uint8_t g[5];
-        g[0] = take(&v, 100);
-        g[1] = G_DOT;
-        g[2] = take(&v, 10);
-        g[3] = (uint8_t)v;
-        g[4] = G_V;
-        battery(out, cv, x);
+        volts(s->vbat_cv > 999 ? 999 : s->vbat_cv, g);
+        battery(out, s->vbat_cv, x);
         text(out, g, 5, VOLT_X, x);
     }
     if (s->temp_c != TEMP_NONE) {
@@ -236,4 +223,110 @@ void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
         g[n++] = G_C;
         text(out, g, n, TEMP_END - text_width(g, n), x);
     }
+}
+
+#if STORED_SCREEN
+// ---------- the stored screen, a portrait row at a time ----------
+// The same strokes as above, transposed: a horizontal stroke across one row, a vertical stroke's slice of it.
+
+// Row v (0..dh-1) of a digit whose left edge is column x0.
+static void digit_row(uint8_t *out, const struct geom *g, uint8_t s, int16_t x0, int16_t v)
+{
+    int16_t ht = g->ht, xr = g->dw - ht, ym = g->dh >> 1, yb = g->dh - ht;
+    const int16_t yc[3] = {ht, ym, yb};
+    const uint8_t seg[3] = {SA, SG, SD};
+    for (uint8_t i = 0; i < 3; i++) {                           // horizontal strokes: d rows off the centre line
+        if ((s & seg[i]) && v >= yc[i] - ht && v < yc[i] + ht) {
+            int16_t d = v < yc[i] ? yc[i] - 1 - v : v - yc[i];
+            black(out, x0 + ht + GAP + d + 1, x0 + xr - GAP - d - 1);
+        }
+    }
+    int16_t up = min3(ht, v - (ht + GAP), (ym - GAP) - v);     // vertical strokes: their half-width on this row
+    int16_t lo = min3(ht, v - (ym + GAP), (yb - GAP) - v);
+    if (up > 0) {
+        if (s & SF) black(out, x0 + ht - up, x0 + ht + up - 1);
+        if (s & SB) black(out, x0 + xr - up, x0 + xr + up - 1);
+    }
+    if (lo > 0) {
+        if (s & SE) black(out, x0 + ht - lo, x0 + ht + lo - 1);
+        if (s & SC) black(out, x0 + xr - lo, x0 + xr + lo - 1);
+    }
+}
+
+// Row v (0..13) of the glyphs g[0..n) set from column x0.
+static void text_row(uint8_t *out, const uint8_t *g, uint8_t n, int16_t x0, int16_t v)
+{
+    uint8_t b = (uint8_t)(v / S);
+    for (uint8_t i = 0; i < n; i++) {
+        for (uint8_t c = 0; c < font_w[g[i]]; c++) {
+            if (font[g[i]][c] & (1u << b)) black(out, x0 + c * S, x0 + c * S + S - 1);
+        }
+        x0 += (font_w[g[i]] + 1) * S;
+    }
+}
+
+// Row v (0..13) of the battery gauge with its left edge at column x0.
+static void battery_row(uint8_t *out, uint16_t cv, int16_t x0, int16_t v)
+{
+    if (v >= 4 && v <= 9) black(out, x0 + 26, x0 + 27);         // terminal
+    if (v < 2 || v >= 12) { black(out, x0, x0 + 25); return; }
+    black(out, x0, x0 + 1);
+    black(out, x0 + 24, x0 + 25);
+    if (v >= 3 && v <= 10) {
+        uint8_t n = bars(cv);
+        for (int16_t b0 = 3; n--; b0 += 5) black(out, x0 + b0, x0 + b0 + 3);
+    }
+}
+
+static void stored_row(const struct screen *s, int16_t y, uint8_t *out)
+{
+    int16_t v = y - small.top;
+    if (v >= 0 && v < small.dh) {
+        for (uint8_t i = 0; i < 4; i++) {
+            if (s->d[i] < 10) digit_row(out, &small, segments[s->d[i]], small.x[i], v);
+        }
+    }
+    if ((y >= small.dot1_y && y < small.dot1_y + small.dot) || (y >= small.dot2_y && y < small.dot2_y + small.dot)) {
+        black(out, small.colon_x, small.colon_x + small.dot - 1);
+    }
+    if (y >= PH_Y0 && y <= PH_Y1) {                             // placeholder: two-pixel outline, 45-degree hatching
+        if (y < PH_Y0 + 2 || y > PH_Y1 - 2) {
+            black(out, PH_X0, PH_X1);
+        } else {
+            black(out, PH_X0, PH_X0 + 1);
+            black(out, PH_X1 - 1, PH_X1);
+            for (int16_t x = PH_X0 + 2; x < PH_X1 - 1; x++) {
+                if (((x + y) & 15) == 0) black(out, x, x);
+            }
+        }
+    }
+    v = y - P_STAT_Y;
+    if (s->vbat_cv && v >= 0 && v < 7 * S) {
+        uint8_t g[5];
+        volts(s->vbat_cv > 999 ? 999 : s->vbat_cv, g);
+        battery_row(out, s->vbat_cv, P_BAT_X, v);
+        text_row(out, g, 5, P_VOLT_X, v);
+    }
+}
+#endif
+
+void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
+{
+    memset(out, 0xFF, EPD_ROW_BYTES);
+#if FLIP
+    int16_t x = row;
+#else
+    int16_t x = W - 1 - row;
+#endif
+#if STORED_SCREEN == 2                                          // a stored-screen-only build (SLEEPMOCK)
+    stored_row(s, W - 1 - x, out);                              // portrait row = W - 1 - landscape column
+#else
+#if STORED_SCREEN
+    if (s->stored) {
+        stored_row(s, W - 1 - x, out);
+        return;
+    }
+#endif
+    counting_column(s, x, out);
+#endif
 }

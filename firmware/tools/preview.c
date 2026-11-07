@@ -41,6 +41,14 @@ int main(int argc, char **argv)
             img[y][x] = (uint8_t)!white;
         }
     }
+    if (sc.stored) {                                // the stored screen reads portrait: landscape turned 90 degrees CCW
+        printf("P1\n%d %d\n", EPD_VISIBLE, EPD_ROWS);
+        for (int py = 0; py < EPD_ROWS; py++) {
+            for (int px = 0; px < EPD_VISIBLE; px++) putchar(img[px][EPD_ROWS - 1 - py] ? '1' : '0');
+            putchar('\n');
+        }
+        return 0;
+    }
     printf("P1\n%d %d\n", EPD_ROWS, EPD_VISIBLE);
     for (int y = 0; y < EPD_VISIBLE; y++) {
         for (int x = 0; x < EPD_ROWS; x++) putchar(img[y][x] ? '1' : '0');

@@ -114,6 +114,7 @@ static void clock_init(void)
     CSCTL4 = SELMS__DCOCLKDIV | SELA__XT1CLK;    // MCLK = SMCLK = ~8 MHz, ACLK = 32.768 kHz
 }
 
+#if !SLEEPMOCK                                   // the count: not in the stored-screen mock-up
 static void load_digits(uint8_t d[4])
 {
     for (uint8_t i = 0; i < 4; i++) d[i] = BK[i];
@@ -155,6 +156,7 @@ static void show_status(const struct screen *s)
     BK_SHOWN_V = s->vbat_cv;
     BK_SHOWN_T = s->temp_c;
 }
+#endif
 
 // The supply supervisor (SVSH) stays on through LPM3.5, at about 0.24 uA. It is what makes the magnet a clean
 // reset: once the hold-up capacitors fall below ~1.8 V it resets the chip, so taking the magnet off powers up
@@ -184,7 +186,7 @@ int main(void)
     // LOOP=1 bench build: full refreshes back to back, 88:88 then 00:00, so a meter can catch the booster's
     // voltages. Never counts; don't leave it on a cell.
     {
-        static const struct screen eights = {{8, 8, 8, 8}, 888, 88}, zeros = {{0, 0, 0, 0}, 0, TEMP_NONE};
+        static const struct screen eights = {{8, 8, 8, 8}, 888, 88, 0}, zeros = {{0, 0, 0, 0}, 0, TEMP_NONE, 0};
         __enable_interrupt();
         for (;;) {
             epd_show(&eights, &eights, 1, 0);
@@ -200,11 +202,12 @@ int main(void)
         struct screen s = {{START / 1000 % 10, START / 100 % 10, START / 10 % 10, START % 10}, 0, 0, 1};
         s.vbat_cv = sense_vcc_cv();
         s.temp_c = sense_temp_c();
+        (void)woke;
         __enable_interrupt();
         epd_show(&s, &s, 1, 0);
         sleep_lpm35();
     }
-#endif
+#else
 
     struct screen now, old;
     now.stored = old.stored = 0;
@@ -258,6 +261,7 @@ int main(void)
         }
     }
     sleep_lpm35();                               // doesn't return: the next wake restarts main()
+#endif
     for (;;) {
     }
 }
