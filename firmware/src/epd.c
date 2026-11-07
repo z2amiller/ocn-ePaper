@@ -31,6 +31,20 @@
 
 static volatile uint8_t timed_out;
 
+// DIAG=1 builds log each update into backup memory bytes 8-15 (the count uses 0-4), for reading back with
+// `DSLite memory --config=targets/msp430fr2111.ccxml --range=0x0660,8 --size=16 --output=bk.bin`:
+//   8      BUSY just after the hardware reset (1 = high)
+//   9      BUSY just after the update command (1 = high: the panel started an update)
+//   10     bit 0: BUSY low after the reset; bit 1: after the SW reset; bit 2: after the update
+//   11     updates so far (mod 256)
+//   12-13  time BUSY stayed high after the SW reset, in 1/4096 s
+//   14-15  time BUSY stayed high for the update, in 1/4096 s (about 12,000 for a 3 s full refresh)
+#ifndef DIAG
+#define DIAG 0
+#endif
+#define DG ((volatile uint8_t *)BKMEM_BASE)
+static uint16_t busy_ticks;             // how long the last wait_busy() waited
+
 static void timer_start(uint16_t ticks)
 {
     timed_out = 0;
@@ -70,6 +84,7 @@ static uint8_t wait_busy(uint16_t ticks)
         __disable_interrupt();
     }
     __enable_interrupt();
+    busy_ticks = TB0R;
     timer_stop();
     P2IE &= ~BUSY;
     P2IFG &= ~BUSY;
@@ -156,11 +171,13 @@ uint8_t epd_show(const uint8_t old[4], const uint8_t now[4], uint8_t full)
     sleep_ticks(RESET_TICKS);
     P2OUT |= RES;
     sleep_ticks(RESET_TICKS);
+    if (DIAG) DG[8] = !!(P2IN & BUSY);
     spi_on();
-    uint8_t ok = wait_busy(BUSY_SHORT_TICKS);
+    uint8_t ok1 = wait_busy(BUSY_SHORT_TICKS);
     CMD0(0x12);                                  // SW reset
     sleep_ticks(RESET_TICKS);                    // "wait 10 ms" (Good Display's sequence), then for BUSY
-    ok &= wait_busy(BUSY_SHORT_TICKS);
+    uint8_t ok2 = wait_busy(BUSY_SHORT_TICKS);
+    if (DIAG) { DG[12] = (uint8_t)busy_ticks; DG[13] = (uint8_t)(busy_ticks >> 8); }
     CMD(0x01, 0xF9, 0x00, 0x00);                 // driver output: 250 gate lines
     CMD(0x11, 0x03);                             // data entry: X then Y, both incrementing
     CMD(0x44, 0x00, EPD_ROW_BYTES - 1);          // RAM X window: bytes 0-15
@@ -180,7 +197,18 @@ uint8_t epd_show(const uint8_t old[4], const uint8_t now[4], uint8_t full)
         CMD(0x22, 0xFF);                         // the same with display mode 2 (partial)
     }
     CMD0(0x20);                                  // go
-    ok &= wait_busy(full ? BUSY_FULL_TICKS : BUSY_PART_TICKS);
+    if (DIAG) {
+        __delay_cycles(800);                     // ~100 us for BUSY to rise
+        DG[9] = !!(P2IN & BUSY);
+    }
+    uint8_t ok3 = wait_busy(full ? BUSY_FULL_TICKS : BUSY_PART_TICKS);
+    if (DIAG) {
+        DG[14] = (uint8_t)busy_ticks;
+        DG[15] = (uint8_t)(busy_ticks >> 8);
+        DG[10] = (uint8_t)(ok1 | (ok2 << 1) | (ok3 << 2));
+        DG[11] = (uint8_t)(DG[11] + 1);
+    }
+    uint8_t ok = ok1 & ok2 & ok3;
     CMD(0x10, 0x03);                             // deep sleep mode 2: 1 uA typ, RAM not kept (rewritten every
                                                  // update anyway); the RAM-keeping sleep is 20 uA. BUSY stays high.
     spi_off();

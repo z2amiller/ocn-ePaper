@@ -26,6 +26,9 @@
 #ifndef START
 #define START 0
 #endif
+#ifndef LOOP
+#define LOOP 0
+#endif
 #ifndef FULL_EVERY
 #define FULL_EVERY 5        // Good Display recommends a full refresh after every five partial updates
 #endif
@@ -150,6 +153,19 @@ int main(void)
     gpio_init();
     PM5CTL0 &= ~LOCKLPM5;                        // pins take the settings above
     clock_init();
+
+#if LOOP
+    // LOOP=1 bench build: full refreshes back to back, 88:88 then 00:00, so a meter can catch the booster's
+    // voltages. Never counts; don't leave it on a cell.
+    {
+        static const uint8_t eights[4] = {8, 8, 8, 8}, zeros[4] = {0, 0, 0, 0};
+        __enable_interrupt();
+        for (;;) {
+            epd_show(eights, eights, 1);
+            epd_show(zeros, zeros, 1);
+        }
+    }
+#endif
 
     uint8_t d[4], old[4];
     if (!woke) {

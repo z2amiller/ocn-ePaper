@@ -76,6 +76,9 @@ make FLIP=1 flash                 # the picture turned through 180 degrees
 make FAST=1 START=9958 flash      # test build: one count a second, from 99:58
 make FULL_EVERY=10 flash          # ten partial updates between full refreshes instead of five
 make preview DIGITS=1234          # draw 12:34 on the Mac: build/preview.pbm
+make DIAG=1 flash                 # log each panel update in backup memory...
+make DIAG=1 readlog               # ...and read it back (halts the chip: power-cycle afterwards)
+make DIAG=1 LOOP=1 flash          # full refreshes back to back, for metering the booster
 make cycle                        # PPK2 power off and on: a clean start, like the magnet coming off
 make measure SECONDS=130          # power-cycle, then measure current for 130 s
 ```
@@ -94,6 +97,12 @@ Each variant builds into its own folder under `build/`; use `make -B` after chan
 - **00:00 that never counts, even after a power cycle,** means the crystal (Y1) didn't start: check its
   joints and C9/C10. The firmware gives the crystal about 3 s, then draws 00:00 anyway and sleeps rather than
   spin and flatten the cell.
+- **A blank panel.** Flash `DIAG=1`, power-cycle, then `make DIAG=1 readlog`. Bytes 8 onwards say whether
+  BUSY rose after the update command and how long it stayed high (see `src/epd.c`); a working panel holds it
+  for about 2-3 s on a full refresh. If BUSY never rises, meter C8 (the panel's own VDD): 1.8 V long after
+  power-up means the panel is powered but never heard a command, since the firmware's last command puts it
+  to sleep, which turns VDD off. On the first board that was a bad joint between U1 and DS2, fixed by
+  reflowing again; check DS2 pin 8 (BS1) to ground too, since a floating BS1 selects 3-wire SPI.
 - `FAST=1` counts once a second, as far as the panel keeps up: a full refresh takes longer than a second, so
   the count falls behind the clock around them.
 

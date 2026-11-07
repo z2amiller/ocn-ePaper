@@ -15,10 +15,12 @@ SUPPORT ?= $(TI)/msp430-gcc-support-files/include
 DSLITE  ?= /Applications/ti/ccs2101/ccs/ccs_base/DebugServer/bin/DSLite
 
 SRC   = src/main.c src/epd.c src/render.c
-BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))
+BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))$(if $(DIAG),-diag)$(if $(LOOP),-loop)
 
 # Test builds. START is hhmm; leading zeros are dropped so C doesn't read it as octal.
+# DIAG=1 logs each panel update in backup memory (see src/epd.c; `make readlog`); LOOP=1 refreshes back to back.
 DEFS = $(EXTRA) $(if $(FLIP),-DFLIP=$(FLIP)) $(if $(FAST),-DFAST=1) $(if $(FULL_EVERY),-DFULL_EVERY=$(FULL_EVERY)) \
+       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) \
        $(if $(START),-DSTART=$(shell echo '$(START)' | sed 's/^0*\([0-9]\)/\1/'))
 
 CC   = $(GCC)/msp430-elf-gcc
@@ -28,7 +30,7 @@ LDFLAGS = -L$(SUPPORT) -Wl,--gc-sections
 
 ELF = $(BUILD)/ocn-epaper.elf
 
-.PHONY: all size flash preview cycle measure clean
+.PHONY: all size flash readlog preview cycle measure clean
 
 all: $(ELF) size compile_flags.txt
 
@@ -48,6 +50,12 @@ size: $(ELF)
 flash: $(ELF)
 	$(DSLITE) flash --config=targets/$(MCU).ccxml --verbose --flash --verify --reset 1 $<
 	@echo "Flashed. The panel shows 00:00 but won't count until the board is power-cycled without the debugger."
+
+# Reads the DIAG log (backup memory 0x0660-0x066F). Attaching halts the chip: power-cycle afterwards.
+readlog:
+	@mkdir -p build
+	$(DSLITE) memory --config=targets/$(MCU).ccxml --range=0x0660,8 --size=16 --output=build/bk.bin > build/readlog.txt 2>&1 || (tail -5 build/readlog.txt; false)
+	@xxd build/bk.bin
 
 # Host preview of the drawing code, as the panel will show it.
 DIGITS ?= 1234
