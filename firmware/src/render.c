@@ -14,29 +14,34 @@
 #ifndef FLIP
 #define FLIP 0
 #endif
+#ifndef STORED_SCREEN
+#define STORED_SCREEN 1     // the stored screen; the counting firmware builds without it (see the Makefile)
+#endif
 
 #define W   250             // landscape width (columns)
 #define H   EPD_VISIBLE     // landscape height (rows)
 
-// One digit is DW x DH pixels with strokes T thick. The segments' centre lines run between the skeleton
-// points (XL or XR, YT or YM or YB); each segment stops GAP short of a corner and is bevelled at 45 degrees.
-#define DH   80
-#define DW   40
-#define T    10
-#define HT   (T / 2)
+// HH:MM in one of two sizes: large on the counting screen, small on the stored screen. A digit is dw x dh
+// pixels with strokes ht * 2 thick, from row top. The segments' centre lines run between the skeleton points
+// (ht or dw - ht across; ht, dh / 2 or dh - ht down); each segment stops GAP short of a corner and is
+// bevelled at 45 degrees. The colon is two dot x dot squares from column colon_x.
 #define GAP  1
-#define TOP  6
-#define XL   HT
-#define XR   (DW - HT)
-#define YT   HT
-#define YM   (DH / 2)
-#define YB   (DH - HT)
+struct geom {
+    uint8_t top, dh, dw, ht;
+    uint8_t x[4];           // left edges of the four digits
+    uint8_t colon_x, dot, dot1_y, dot2_y;
+};
+static const struct geom big = {6, 80, 40, 5, {27, 73, 137, 183}, 121, 8, 26, 58};
+#if STORED_SCREEN
+static const struct geom small = {4, 36, 20, 3, {74, 100, 130, 156}, 123, 4, 13, 27};
 
-static const uint8_t digit_x[4] = {27, 73, 137, 183};   // left edges; the colon sits between 113 and 137
-#define COLON_X  121
-#define DOT      8
-#define DOT1_Y   (TOP + 20)
-#define DOT2_Y   (TOP + 52)
+#endif
+
+// The stored screen's placeholder for a graphic: an outlined, lightly hatched band.
+#define PH_X0  6
+#define PH_X1  243
+#define PH_Y0  46
+#define PH_Y1  91
 
 // The status line: 5 x 7 glyphs at S times size, from row STATUS_Y.
 #define S         2
@@ -96,26 +101,56 @@ static int16_t min3(int16_t a, int16_t b, int16_t c)
 }
 
 // A vertical stroke centred on column xc: at dd columns from its centre it is shortened by dd at each end.
-static void vertical(uint8_t *out, int16_t u, int16_t xc, uint8_t upper, uint8_t lower)
+static void vertical(uint8_t *out, const struct geom *g, int16_t u, int16_t xc, uint8_t upper, uint8_t lower)
 {
-    if (u < xc - HT || u >= xc + HT) return;
+    int16_t ht = g->ht, yt = g->top + ht, ym = g->top + (g->dh >> 1), yb = g->top + g->dh - ht;
+    if (u < xc - ht || u >= xc + ht) return;
     int16_t dd = u < xc ? xc - 1 - u : u - xc;
-    if (upper) black(out, TOP + YT + GAP + dd + 1, TOP + YM - GAP - dd - 1);
-    if (lower) black(out, TOP + YM + GAP + dd + 1, TOP + YB - GAP - dd - 1);
+    if (upper) black(out, yt + GAP + dd + 1, ym - GAP - dd - 1);
+    if (lower) black(out, ym + GAP + dd + 1, yb - GAP - dd - 1);
 }
 
-// Column u (0..DW-1) of a digit.
-static void digit_column(uint8_t *out, uint8_t s, int16_t u)
+// Column u (0..dw-1) of a digit.
+static void digit_column(uint8_t *out, const struct geom *g, uint8_t s, int16_t u)
 {
-    int16_t hh = min3(HT, u - (XL + GAP), (XR - GAP) - u);     // half-thickness of the horizontal strokes here
+    int16_t ht = g->ht, xr = g->dw - ht;
+    int16_t yt = g->top + ht, ym = g->top + (g->dh >> 1), yb = g->top + g->dh - ht;
+    int16_t hh = min3(ht, u - (ht + GAP), (xr - GAP) - u);     // half-thickness of the horizontal strokes here
     if (hh > 0) {
-        if (s & SA) black(out, TOP + YT - hh, TOP + YT + hh - 1);
-        if (s & SG) black(out, TOP + YM - hh, TOP + YM + hh - 1);
-        if (s & SD) black(out, TOP + YB - hh, TOP + YB + hh - 1);
+        if (s & SA) black(out, yt - hh, yt + hh - 1);
+        if (s & SG) black(out, ym - hh, ym + hh - 1);
+        if (s & SD) black(out, yb - hh, yb + hh - 1);
     }
-    vertical(out, u, XL, s & SF, s & SE);
-    vertical(out, u, XR, s & SB, s & SC);
+    vertical(out, g, u, ht, s & SF, s & SE);
+    vertical(out, g, u, xr, s & SB, s & SC);
 }
+
+// Column x of HH:MM drawn with geometry g.
+static void clock_column(uint8_t *out, const struct geom *g, const uint8_t d[4], int16_t x)
+{
+    for (uint8_t i = 0; i < 4; i++) {
+        int16_t u = x - g->x[i];
+        if (u >= 0 && u < g->dw && d[i] < 10) digit_column(out, g, segments[d[i]], u);
+    }
+    if (x >= g->colon_x && x < g->colon_x + g->dot) {
+        black(out, g->dot1_y, g->dot1_y + g->dot - 1);
+        black(out, g->dot2_y, g->dot2_y + g->dot - 1);
+    }
+}
+
+#if STORED_SCREEN
+// Column x of the stored screen's placeholder: a two-pixel outline, hatched at 45 degrees inside.
+static void placeholder(uint8_t *out, int16_t x)
+{
+    if (x < PH_X0 || x > PH_X1) return;
+    if (x < PH_X0 + 2 || x > PH_X1 - 2) { black(out, PH_Y0, PH_Y1); return; }
+    black(out, PH_Y0, PH_Y0 + 1);
+    black(out, PH_Y1 - 1, PH_Y1);
+    for (int16_t y = PH_Y0 + 2; y < PH_Y1 - 1; y++) {
+        if (((x + y) & 15) == 0) black(out, y, y);
+    }
+}
+#endif
 
 // How many `unit`s fit in *v, taking them off: digits without pulling in the library's division routines.
 static uint8_t take(uint16_t *v, uint16_t unit)
@@ -171,15 +206,14 @@ void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
 #else
     int16_t x = W - 1 - row;
 #endif
-    for (uint8_t i = 0; i < 4; i++) {
-        int16_t u = x - digit_x[i];
-        if (u >= 0 && u < DW && s->d[i] < 10) {
-            digit_column(out, segments[s->d[i]], u);
-        }
-    }
-    if (x >= COLON_X && x < COLON_X + DOT) {
-        black(out, DOT1_Y, DOT1_Y + DOT - 1);
-        black(out, DOT2_Y, DOT2_Y + DOT - 1);
+#if STORED_SCREEN
+    if (s->stored) {                             // magnet on: the stopped time small, a graphic under it
+        clock_column(out, &small, s->d, x);
+        placeholder(out, x);
+    } else
+#endif
+    {
+        clock_column(out, &big, s->d, x);
     }
     if (s->vbat_cv) {
         uint16_t cv = s->vbat_cv > 999 ? 999 : s->vbat_cv, v = cv;

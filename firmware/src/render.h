@@ -18,6 +18,7 @@ struct screen {
     uint8_t d[4];           // the count, tens of hours first
     uint16_t vbat_cv;       // battery in hundredths of a volt; 0 leaves the battery off
     int8_t temp_c;          // whole degrees C, or TEMP_NONE
+    uint8_t stored;         // 1: the stored screen (time small at the top, a graphic, the status line)
 };
 
 // Fills out[] for RAM row `row` (0 = first row written): bit 7 of out[0] is pixel 0, and a 1 bit is white.

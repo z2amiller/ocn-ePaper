@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Host preview of src/render.c: `make preview DIGITS=1234 VBAT=298 TEMP=17` writes build/preview.pbm, the
+// Host preview of src/render.c: `make preview DIGITS=1234 VBAT=298 TEMP=17 [STORED=1]` writes build/preview.pbm, the
 // panel read landscape, rebuilt from the RAM rows exactly as the firmware sends them. It undoes the same
 // mapping the build used, so FLIP=1 previews the same upright picture: the check is that the rows decode
 // cleanly and the screen is drawn right, not which way up the real panel is.
@@ -16,13 +16,14 @@ int main(int argc, char **argv)
 {
     const char *s = argc > 1 ? argv[1] : "1234";
     if (strlen(s) != 4) {
-        fprintf(stderr, "usage: preview HHMM [battery centivolts, 0 for none] [temperature C, none for none]\n");
+        fprintf(stderr, "usage: preview HHMM [battery centivolts, 0 for none] [temperature C, none for none] [stored]\n");
         return 1;
     }
     struct screen sc = { .vbat_cv = 298, .temp_c = 17 };
     for (int i = 0; i < 4; i++) sc.d[i] = (uint8_t)(s[i] - '0');
     if (argc > 2) sc.vbat_cv = (uint16_t)atoi(argv[2]);
     if (argc > 3) sc.temp_c = strcmp(argv[3], "none") ? (int8_t)atoi(argv[3]) : TEMP_NONE;
+    if (argc > 4) sc.stored = strcmp(argv[4], "stored") == 0;
 
     static uint8_t img[EPD_VISIBLE][EPD_ROWS];      // landscape: [y][x], 1 = black
     for (int row = 0; row < EPD_ROWS; row++) {

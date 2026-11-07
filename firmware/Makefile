@@ -7,6 +7,7 @@
 #   make FAST=1 START=9958 flash      test build: count once a second, starting from 99:58
 #   make FULL_EVERY=10                partial updates between full refreshes (default 5)
 #   make preview DIGITS=1234 VBAT=298 TEMP=17   draw a screen on this Mac: build/preview.pbm
+#   make SLEEPMOCK=1 START=4207 flash   mock-up: the stored screen, stopped at 42:07 (no counting)
 
 MCU     ?= msp430fr2111
 TI      ?= $(HOME)/ti
@@ -15,12 +16,12 @@ SUPPORT ?= $(TI)/msp430-gcc-support-files/include
 DSLITE  ?= /Applications/ti/ccs2101/ccs/ccs_base/DebugServer/bin/DSLite
 
 SRC   = src/main.c src/epd.c src/render.c src/sense.c
-BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))$(if $(DIAG),-diag)$(if $(LOOP),-loop)
+BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))$(if $(DIAG),-diag)$(if $(LOOP),-loop)$(if $(SLEEPMOCK),-sleepmock)
 
 # Test builds. START is hhmm; leading zeros are dropped so C doesn't read it as octal.
 # DIAG=1 logs each panel update in backup memory (see src/epd.c; `make readlog`); LOOP=1 refreshes back to back.
 DEFS = $(EXTRA) $(if $(FLIP),-DFLIP=$(FLIP)) $(if $(FAST),-DFAST=1) $(if $(FULL_EVERY),-DFULL_EVERY=$(FULL_EVERY)) \
-       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) \
+       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) $(if $(SLEEPMOCK),-DSLEEPMOCK=1,-DSTORED_SCREEN=0) \
        $(if $(START),-DSTART=$(shell echo '$(START)' | sed 's/^0*\([0-9]\)/\1/'))
 
 CC   = $(GCC)/msp430-elf-gcc
@@ -64,7 +65,7 @@ TEMP   ?= 17
 preview:
 	@mkdir -p build
 	cc -std=c11 -Wall -Wextra $(if $(FLIP),-DFLIP=$(FLIP)) -o build/preview tools/preview.c src/render.c
-	build/preview $(DIGITS) $(VBAT) $(TEMP) > build/preview.pbm
+	build/preview $(DIGITS) $(VBAT) $(TEMP) $(if $(STORED),stored) > build/preview.pbm
 	@echo "build/preview.pbm"
 
 # PPK2 as the supply (see tools/ppk.py): `make cycle` switches it off and on, a clean power-up like the magnet

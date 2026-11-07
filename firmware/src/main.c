@@ -34,6 +34,9 @@
 #ifndef LOOP
 #define LOOP 0
 #endif
+#ifndef SLEEPMOCK
+#define SLEEPMOCK 0
+#endif
 #ifndef FULL_EVERY
 #define FULL_EVERY 5        // Good Display recommends a full refresh after every five partial updates
 #endif
@@ -190,7 +193,21 @@ int main(void)
     }
 #endif
 
+#if SLEEPMOCK
+    // SLEEPMOCK=1 bench build: draws the stored screen once, with START as the stopped time, then sleeps for
+    // good (the RTC never starts). A mock-up of what a board with the reed on a GPIO would show while stored.
+    {
+        struct screen s = {{START / 1000 % 10, START / 100 % 10, START / 10 % 10, START % 10}, 0, 0, 1};
+        s.vbat_cv = sense_vcc_cv();
+        s.temp_c = sense_temp_c();
+        __enable_interrupt();
+        epd_show(&s, &s, 1, 0);
+        sleep_lpm35();
+    }
+#endif
+
     struct screen now, old;
+    now.stored = old.stored = 0;
     if (!woke) {
         const uint8_t start[4] = {START / 1000 % 10, START / 100 % 10, START / 10 % 10, START % 10};
         save_digits(start);
