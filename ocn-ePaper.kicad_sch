@@ -9943,7 +9943,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "CR123"
+		(property "Value" "CR2032"
 			(at 28.956 39.116 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9954,7 +9954,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "LowPower:BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A"
+		(property "Footprint" "LowPower:BatteryHolder_LianXin_BS-CR2032-8_1x2032"
 			(at 25.4 34.036 90)
 			(hide yes)
 			(show_name no)
@@ -10020,7 +10020,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C5290177"
+		(property "LCSC" "C7498149"
 			(at 22.098 35.814 0)
 			(hide yes)
 			(show_name no)
