@@ -3614,8 +3614,8 @@
 		(uuid "660a4b7b-0321-48bf-a6a0-8a3c4bc4c70c")
 	)
 	(no_connect
-		(at 71.12 87.63)
-		(uuid "8e41164c-64a5-4d84-9431-9e030b554313")
+		(at 96.52 95.25)
+		(uuid "7d8f6ef4-8422-4458-948c-9b8da08ea296")
 	)
 	(no_connect
 		(at 85.09 154.94)
@@ -4885,7 +4885,7 @@
 	)
 	(global_label "D_C"
 		(shape input)
-		(at 71.12 95.25 180)
+		(at 71.12 87.63 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4895,7 +4895,7 @@
 		)
 		(uuid "838978f6-7853-490f-bfed-572f4ef02a4a")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 64.6272 95.25 0)
+			(at 64.6272 87.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5293,17 +5293,17 @@
 	)
 	(global_label "BUSY"
 		(shape input)
-		(at 96.52 95.25 0)
+		(at 71.12 95.25 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left)
+			(justify right)
 		)
 		(uuid "ee88a09d-8ae1-4665-bb87-784d6823d4f4")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 104.4038 95.25 0)
+			(at 63.2362 95.25 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5311,7 +5311,7 @@
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 	)
@@ -7482,7 +7482,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "LowPower:EPD_GDEY0213B74_FoldedUnder_Hirose_FH34SRJ-24S-0.5SH"
+		(property "Footprint" "LowPower:EPD_GDEY0213B74_WrappedToBack_Hirose_FH34SRJ-24S-0.5SH"
 			(at 100.33 144.78 0)
 			(hide yes)
 			(show_name no)

@@ -76,7 +76,24 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        [
+          "pth_inside_courtyard|154000000|101070000|9bdfdb96-469e-4155-b122-39ff1002c725|f4b376fa-6b94-44da-871c-5b83b72b382d",
+          ""
+        ],
+        [
+          "pth_inside_courtyard|154000000|103610000|9b40cf82-ab6e-4a2f-90a2-5dcfa15e61a0|f4b376fa-6b94-44da-871c-5b83b72b382d",
+          ""
+        ],
+        [
+          "pth_inside_courtyard|154000000|95990000|046e2adb-6ced-4a40-83d0-f4af83d115a9|f4b376fa-6b94-44da-871c-5b83b72b382d",
+          ""
+        ],
+        [
+          "pth_inside_courtyard|154000000|98530000|a4bdebf7-baaa-44fe-9bc2-22cc05c7c2e8|f4b376fa-6b94-44da-871c-5b83b72b382d",
+          ""
+        ]
+      ],
       "meta": {
         "version": 2
       },
