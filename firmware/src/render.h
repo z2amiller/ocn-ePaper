@@ -14,6 +14,8 @@
 
 #define TEMP_NONE (-128)    // temp_c value that leaves the temperature off
 
+#define BATTERY_EMPTY_CV 240    // under load, below this the gauge shows no bars: replace the cell
+
 struct screen {
     uint8_t d[4];           // the count, tens of hours first
     uint16_t vbat_cv;       // battery in hundredths of a volt; 0 leaves the battery off

@@ -25,8 +25,16 @@
 // read at each wake, just before drawing. The battery is read in the middle of each update, while the panel's
 // booster loads it, and shown at the next update; at power-up it's read before the first drawing.
 //
-// Power-up (fitting the cells, or the programmer's supply coming back) starts afresh from 00:00: counting if
-// the magnet is off, stored if it's on.
+// Power-up (fitting the cell, or the programmer's supply coming back), or any reset that isn't a wake, starts
+// afresh: counting from 00:00 if the magnet is off, or the stored screen if it's on. The stopped time also goes
+// into information FRAM, which keeps it through any reset and with no cell at all, so the stored screen shows
+// it again after one.
+//
+// A weak cell can brown out partway through an update (a cold, aged CR2032 sags most during a full refresh), and
+// the supervisor's reset then starts the program again. Each update is marked as under way in FRAM while it
+// runs; a start that finds the mark draws nothing, so a cell that can't finish a refresh can't loop through
+// them, and the next update tries again a minute or a week later. The weekly redraw is skipped once the battery
+// reads empty, since a refresh that fails halfway can leave the stopped time unreadable.
 //
 // Build options (see the Makefile): FAST=1 counts once a second and redraws the stored screen every 30 s;
 // START=hhmm starts from that count; FLIP=1 turns the picture through 180 degrees; FULL_EVERY=n sets the
@@ -69,6 +77,13 @@
 
 enum { COUNTING = 0, STORED = 1 };
 
+// Information FRAM (0x1800, not loaded by the build): bytes 0-3 the last stopped time, 4 a check byte over
+// them, 5 UPDATING while a panel update runs.
+static volatile uint8_t info[6] __attribute__((section(".info")));
+#define INFO_CHECK    4
+#define INFO_UPDATE   5
+#define UPDATING      0x5A
+
 static volatile uint8_t ticks;          // RTC interrupts not yet handled
 
 // SYSRSTIV holds every reset cause since it was last emptied; each read returns the highest-priority one and
@@ -96,7 +111,7 @@ static uint8_t woke_from_lpm35(void)
 //               draw current all the time
 //   P1.7 RES    high: low would hold the panel in reset
 //   P2.0, P2.1  the crystal (P2SEL = 10)
-//   P2.2        not connected, and P2.3-P2.7 not bonded out on this package: driven low
+//   P2.2        not connected, and P2.3-P2.6 not bonded out on this package: driven low
 static void gpio_init(void)
 {
     P1OUT = CS | RES;
@@ -110,8 +125,8 @@ static void gpio_init(void)
 static void clock_init(void)
 {
     // The crystal: already running after a wake, typically 1 s to start from power-up. Give up after about
-    // 3 s (at the ~1 MHz reset clock) rather than spin on a bad joint and flatten the cells: ACLK then falls
-    // back to REFO by itself, the panel still shows 00:00, and the RTC never ticks, so it never counts.
+    // 3 s (at the ~1 MHz reset clock) rather than spin on a bad joint and flatten the cell: ACLK then falls
+    // back to REFO by itself, the first screen still goes up, and the RTC never ticks, so it never counts.
     for (uint16_t i = 0; i < 3000; i++) {
         CSCTL7 &= ~(XT1OFFG | DCOFFG);
         SFRIFG1 &= ~OFIFG;
@@ -174,6 +189,52 @@ static void show_status(const struct screen *s)
     BK_SHOWN_T = s->temp_c;
 }
 
+// The count a new start begins from: 00:00, or START in a test build.
+static void start_digits(uint8_t d[4])
+{
+    d[0] = START / 1000 % 10;
+    d[1] = START / 100 % 10;
+    d[2] = START / 10 % 10;
+    d[3] = START % 10;
+}
+
+// Information FRAM is write-protected except while these write it.
+static void info_write(uint8_t i, uint8_t v)
+{
+    SYSCFG0 = FRWPPW | PFWP;                     // information FRAM writable; program FRAM stays protected
+    info[i] = v;
+    SYSCFG0 = FRWPPW | PFWP | DFWP;
+}
+
+static void save_stopped(const uint8_t d[4])
+{
+    uint8_t c = 0xA5;
+    for (uint8_t i = 0; i < 4; i++) {
+        info_write(i, d[i]);
+        c ^= d[i];
+    }
+    info_write(INFO_CHECK, c);
+}
+
+// The last stopped time, if FRAM holds one.
+static uint8_t load_stopped(uint8_t d[4])
+{
+    uint8_t c = 0xA5;
+    for (uint8_t i = 0; i < 4; i++) {
+        d[i] = info[i];
+        c ^= d[i];
+    }
+    return c == info[INFO_CHECK] && d[0] <= 9 && d[1] <= 9 && d[2] <= 5 && d[3] <= 9;
+}
+
+// Draws on the panel, marked as under way in FRAM until it's done.
+static void show(const struct screen *old, const struct screen *now, uint8_t full)
+{
+    info_write(INFO_UPDATE, UPDATING);
+    epd_show(old, now, full, read_battery);
+    info_write(INFO_UPDATE, 0);
+}
+
 // ---------- the RTC and the magnet ----------
 
 // Stops the RTC and drops its interrupts not yet handled, returning how many, including one that has fired but
@@ -227,10 +288,11 @@ static uint8_t magnet(void)
 
 // ---------- the two modes ----------
 
-// Starts a count from START (00:00 unless a test build says otherwise), drawn with a full refresh.
-static void start_count(void)
+// Starts a count from 00:00 (START in a test build), drawn with a full refresh unless `draw` is 0.
+static void start_count(uint8_t draw)
 {
-    const uint8_t start[4] = {START / 1000 % 10, START / 100 % 10, START / 10 % 10, START % 10};
+    uint8_t start[4];
+    start_digits(start);
     save_digits(start);
     BK_PARTIALS = 0;
     BK_MODE = COUNTING;
@@ -244,7 +306,7 @@ static void start_count(void)
     now.vbat_cv = BK_VBAT;
     now.temp_c = sense_temp_c();
     now.stored = 0;
-    epd_show(&now, &now, 1, read_battery);
+    if (draw) show(&now, &now, 1);
     show_status(&now);
 }
 
@@ -266,7 +328,7 @@ static void count_minute(void)
     old.stored = now.stored = 0;
     uint8_t full = at_end(now.d) || BK_PARTIALS >= FULL_EVERY;
     BK_PARTIALS = full ? 0 : BK_PARTIALS + 1;
-    epd_show(&old, &now, full, read_battery);
+    show(&old, &now, full);
     show_status(&now);
     if (at_end(now.d)) rtc_stop();               // 99:59 is on the panel, cleanly: no more wakes
 }
@@ -278,32 +340,40 @@ static void draw_stored(void)
     s.vbat_cv = BK_VBAT;
     s.temp_c = TEMP_NONE;
     s.stored = 1;
-    epd_show(&s, &s, 1, read_battery);
+    show(&s, &s, 1);
 }
 
-// Stops the count where it is and draws the stored screen. Minutes the RTC has already counted but the panel
-// hasn't shown yet still count.
+// Stored mode from now, with the RTC on its 2,048 s wakes; the caller draws. Returns the RTC interrupts it
+// dropped, as rtc_every().
+static uint8_t go_stored(void)
+{
+    uint8_t dropped = rtc_every(STORE_MOD);
+    BK_MODE = STORED;
+    BK_STORE_WAKES = 0;
+    return dropped;
+}
+
+// Stops the count where it is, keeps the stopped time in FRAM and draws the stored screen. Minutes the RTC has
+// already counted but the panel hasn't shown yet still count.
 static void store(void)
 {
-    uint8_t pending = rtc_every(STORE_MOD);
-    if (BK_MODE != COUNTING) pending = 0;
+    uint8_t pending = go_stored();
     uint8_t d[4];
     load_digits(d);
     for (; pending && advance(d); pending--) {
     }
     save_digits(d);
-    BK_MODE = STORED;
-    BK_STORE_WAKES = 0;
+    save_stopped(d);
     draw_stored();
 }
 
-// One RTC interrupt while stored.
+// One RTC interrupt while stored. A cell that already reads empty skips the redraw: a refresh it can't finish
+// could leave the stopped time unreadable.
 static void stored_wake(void)
 {
-    if (++BK_STORE_WAKES >= STORE_WAKES) {
-        BK_STORE_WAKES = 0;
-        draw_stored();
-    }
+    if (++BK_STORE_WAKES < STORE_WAKES) return;
+    BK_STORE_WAKES = 0;
+    if (BK_VBAT >= BATTERY_EMPTY_CV) draw_stored();
 }
 
 // Arms Port 1 for the WAKE edge that would change the mode (falling while stored, rising while counting), then
@@ -311,7 +381,7 @@ static void stored_wake(void)
 // interrupt arrives as the chip goes to sleep.
 //
 // The supply supervisor (SVSH) stays on through LPM3.5, at about 0.24 uA. It resets the chip cleanly if the
-// cells ever sag below ~1.8 V, rather than leaving the RTC and backup memory running below their minimum
+// cell ever sags below ~1.8 V, rather than leaving the RTC and backup memory running below their minimum
 // voltage: without it, the brownout reset is only guaranteed once the supply falls below 0.1 V.
 static void sleep_lpm35(uint8_t stored)
 {
@@ -348,7 +418,7 @@ int main(void)
 
     if (LOOP) {
         // LOOP=1 bench build: full refreshes back to back, 88:88 then 00:00, so a meter can catch the booster's
-        // voltages. Never counts; don't leave it on the cells.
+        // voltages. Never counts; don't leave it on the cell.
         static const struct screen eights = {{8, 8, 8, 8}, 888, 88, 0}, zeros = {{0, 0, 0, 0}, 0, TEMP_NONE, 0};
         __enable_interrupt();
         for (;;) {
@@ -358,15 +428,20 @@ int main(void)
     }
 
     if (!woke) {
-        const uint8_t start[4] = {START / 1000 % 10, START / 100 % 10, START / 10 % 10, START % 10};
-        save_digits(start);                      // what the stored screen shows if the magnet is on already
-        BK_MODE = COUNTING;
+        // An update still marked as under way never finished: the cell browned out during it. Draw nothing this
+        // time, so a cell that can't manage a refresh can't loop through them.
+        uint8_t draw = info[INFO_UPDATE] != UPDATING;
+        if (!draw) info_write(INFO_UPDATE, 0);
         BK_VBAT = sense_vcc_cv();                // unloaded, so the first screen has a reading
         __enable_interrupt();
         if (magnet()) {
-            store();
+            uint8_t d[4];
+            if (!load_stopped(d)) start_digits(d);
+            save_digits(d);                      // the last stopped time, which FRAM kept through the reset
+            (void)go_stored();
+            if (draw) draw_stored();
         } else {
-            start_count();
+            start_count(draw);
         }
     } else {
         __enable_interrupt();                    // the RTC interrupt that woke us, if it did, runs now
@@ -379,7 +454,7 @@ int main(void)
         uint8_t stored = BK_MODE == STORED;
         if (reed() != stored && magnet() != stored) {
             if (stored) {
-                start_count();
+                start_count(1);
             } else {
                 store();
             }

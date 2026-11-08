@@ -69,7 +69,7 @@ preview:
 	@echo "build/preview.pbm"
 
 # PPK2 as the supply (see tools/ppk.py): `make cycle` switches it off and on, a clean power-up like fitting the
-# cells; `make measure SECONDS=130` power-cycles and measures. VOLTS is the supply voltage.
+# cell; `make measure SECONDS=130` power-cycles and measures. VOLTS is the supply voltage.
 VOLTS   ?= 3.0
 SECONDS ?= 10
 PY       = .venv/bin/python

@@ -149,12 +149,12 @@ static void volts(uint16_t cv, uint8_t g[5])
     g[4] = G_V;
 }
 
-// Two CR2032s in parallel, read under the booster's load: fresh cells read about 2.8-2.9 V there, and their
-// resistance, which climbs with age and cold, pulls it down from there. Below about 2.4 V an update comes
-// close to the panel's 2.2 V minimum, so no bars means replace the cells.
+// A CR2032, read under the booster's load: a fresh cell reads about 2.75-2.9 V there, and its resistance,
+// which climbs with age and cold, pulls that down. Below BATTERY_EMPTY_CV an update comes close to the panel's
+// 2.2 V minimum, so no bars means replace the cell.
 static uint8_t bars(uint16_t cv)
 {
-    return cv >= 280 ? 4 : cv >= 265 ? 3 : cv >= 250 ? 2 : cv >= 240 ? 1 : 0;
+    return cv >= 275 ? 4 : cv >= 262 ? 3 : cv >= 250 ? 2 : cv >= BATTERY_EMPTY_CV ? 1 : 0;
 }
 
 static int16_t text_width(const uint8_t *g, uint8_t n)

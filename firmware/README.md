@@ -6,7 +6,7 @@ minutes from when the magnet comes off the board and shows HH:MM in large seven-
 Putting the magnet back stops the count and switches to the stored screen, which shows the stopped time.
 
 Adapted from the [ocn-LCD](https://github.com/z2amiller/ocn-LCD) firmware, which does the same on a segment
-LCD. The build is about 4.7 KB; the FR2422 has 7,296 bytes of FRAM and 2 KB of RAM.
+LCD. The build is about 5.0 KB; the FR2422 has 7,296 bytes of FRAM and 2 KB of RAM.
 
 Status: ported to the FR2422 board (revision 0.3) on 2026-11-08. It builds, but hasn't run on that board yet.
 The FR2111 boards (revisions 0.1 and 0.2), where the magnet switches the power, run the firmware as of commit
@@ -48,16 +48,24 @@ the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.
   panel flashes black and white), which clears the ghosting that partial updates leave. Then the panel goes
   back into deep sleep, where it draws about 1 µA. 99:59 is drawn with a full refresh, then the RTC stops.
 - **Stored** (magnet on). The count stops where it is, including any minute the RTC counted that the panel
-  hadn't shown yet, and the stored screen shows it with a full refresh. The RTC then wakes the chip every
-  2,048 s (34 minutes, the longest it can), and every 295th wake, about weekly, the stored screen is drawn
-  again. Good Display asks for a full refresh about once a week on a panel that keeps showing the same
-  picture.
+  hadn't shown yet, and the stored screen shows it with a full refresh. The stopped time also goes into the
+  chip's information FRAM, which keeps it through any reset and with no cell fitted. The RTC then wakes the
+  chip every 2,048 s (34 minutes, the longest it can), and every 295th wake, about weekly, the stored screen is
+  drawn again. Good Display asks for a full refresh about once a week on a panel that keeps showing the same
+  picture. Once the battery reads empty, the weekly redraw stops: a refresh the cell can't finish could leave
+  the stopped time unreadable.
 - **Taking the magnet off** starts a new count from 00:00 with a full refresh.
-- **Power-up** (fitting the cells, or the programmer's supply returning), or any reset other than an LPM3.5
-  wake, starts afresh: from 00:00 counting if the magnet is off, or the stored screen at 00:00 if it's on.
+- **Power-up** (fitting the cell, or the programmer's supply returning), or any reset other than an LPM3.5
+  wake, starts afresh: from 00:00 counting if the magnet is off, or, if it's on, the stored screen with the
+  last stopped time from FRAM (00:00 on a new chip).
+- **A brownout partway through an update.** A cold or aged CR2032 sags most during a full refresh, and if it
+  falls far enough the supervisor resets the chip. FRAM marks each update as under way until it finishes, and a
+  start that finds the mark draws nothing, so a cell that can't manage a refresh can't loop through them. The
+  next update tries again, a minute later while counting or a week later while stored. This also means a start
+  after a reset in the middle of an update (a debugger, say) leaves the panel alone once; power-cycle again.
 - While the panel works, the chip waits in LPM3 for BUSY to fall, with Timer_A0 as a timeout, so a missing or
-  stuck panel costs a few seconds per update, not flat cells.
-- The supply supervisor (SVSH) stays on in LPM3.5, at about 0.24 µA. If the cells ever sag below ~1.8 V, it
+  stuck panel costs a few seconds per update, not a flat cell.
+- The supply supervisor (SVSH) stays on in LPM3.5, at about 0.24 µA. If the cell ever sags below ~1.8 V, it
   resets the chip cleanly. Without it, the brownout reset is only guaranteed once the supply falls below 0.1 V,
   and the RTC and backup memory could run on below their minimum voltage.
 - The panel sleeps in its deep-sleep mode 2, 1 µA typical, which doesn't keep the panel's RAM. Nothing
@@ -69,11 +77,11 @@ the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.
 do (the FR2422 has the same internal channels and calibration addresses):
 - **Battery.** The reference measured against the supply gives the supply: 1.5 V × 1023 / reading, averaged
   over eight readings 1 ms apart. It is read 150 ms into each update, while the panel's booster loads the
-  cells, and shown at the next update; at power-up it is read before the first drawing. Under that load the
-  reading follows the cells' internal resistance, which climbs with age and cold, so it warns before an update
-  could pull the supply under the panel's 2.2 V minimum. The gauge shows four bars from 2.80 V, three from
-  2.65, two from 2.50, one from 2.40, and none below: replace the cells. The reference is good to a few
-  percent, so treat it as a warning, not a fuel gauge.
+  CR2032, and shown at the next update; at power-up it is read before the first drawing. Under that load the
+  reading follows the cell's internal resistance, which climbs with age and cold, so it warns before an update
+  could pull the supply under the panel's 2.2 V minimum: a fresh cell reads about 2.75-2.9 V there. The gauge
+  shows four bars from 2.75 V, three from 2.62, two from 2.50, one from 2.40, and none below: replace the
+  cell. The reference is good to a few percent, so treat it as a warning, not a fuel gauge.
 - **Temperature.** The chip's own sensor, read at each wake and scaled between TI's factory calibration
   readings at 30 and 85 °C (stored in the chip). The chip sleeps almost all the time, so it sits at the
   temperature around it. On the first board it read 23 °C from the first minute on, in a room at about
@@ -123,7 +131,7 @@ Other locations work too: set `TI=`, `GCC=`, `SUPPORT=` or `DSLITE=` on the `mak
 ## Use
 
 Run these from this folder, with the board wired to a LaunchPad as in the board's
-[README](../README.md#programming) (cells out).
+[README](../README.md#programming) (cell out).
 
 ```
 make                              # build
@@ -136,7 +144,7 @@ make preview DIGITS=4207 VBAT=286 STORED=1  # the stored screen, stopped at 42:0
 make DIAG=1 flash                 # log each panel update in backup memory...
 make DIAG=1 readlog               # ...and read it back (halts the chip: power-cycle afterwards)
 make DIAG=1 LOOP=1 flash          # full refreshes back to back, for metering the booster
-make cycle                        # PPK2 power off and on: a clean power-up, like fitting the cells
+make cycle                        # PPK2 power off and on: a clean power-up, like fitting the cell
 make measure SECONDS=130          # power-cycle, then measure current for 130 s
 ```
 
@@ -157,7 +165,7 @@ Each variant builds into its own folder under `build/`; use `make -B` after chan
   refresh, 3 s for a partial update) and carries on.
 - **00:00 that never counts, even after a power cycle,** means the crystal (Y1) didn't start: check its
   joints and C9/C10. The firmware gives the crystal about 3 s, then draws its first screen anyway and sleeps
-  rather than spin and flatten the cells. The magnet still switches screens, but nothing counts.
+  rather than spin and flatten the cell. The magnet still switches screens, but nothing counts.
 - **A blank panel.** Flash `DIAG=1`, power-cycle, then `make DIAG=1 readlog`. Bytes 8 onwards say whether
   BUSY rose after the update command and how long it stayed high (see `src/epd.c`); a working panel holds it
   for about 2-3 s on a full refresh. If BUSY never rises, meter C8 (the panel's own VDD): 1.8 V long after
