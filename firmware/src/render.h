@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Draws the screen one panel RAM row at a time: HH:MM in seven-segment digits, and under them a status line
-// with the battery and the temperature. The whole 250 x 122 frame is 3.8 KB and the FR2111 has 1 KB of RAM,
-// so nothing is buffered: each row is computed as it's sent. Plain C with no MSP430 headers, so
-// tools/preview.c can build it on the host.
+// with the battery and the temperature, or the stored screen. The whole 250 x 122 frame is 3.8 KB and the
+// FR2422 has 2 KB of RAM, so nothing is buffered: each row is computed as it's sent. Plain C with no MSP430
+// headers, so tools/preview.c can build it on the host.
 #ifndef RENDER_H
 #define RENDER_H
 

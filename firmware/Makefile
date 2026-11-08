@@ -1,27 +1,27 @@
 # SPDX-License-Identifier: MIT
 # Build with the TI/Mitto msp430-gcc in ~/ti; flash with CCS's DSLite (both x86_64, run under Rosetta).
 #
-#   make                              build the counter for the board's MSP430FR2111
+#   make                              build the counter for the board's MSP430FR2422
 #   make flash                        build, then program and verify through a LaunchPad's eZ-FET, and reset
 #   make FLIP=1 flash                 the same picture turned through 180 degrees, if the digits come out upside down
-#   make FAST=1 START=9958 flash      test build: count once a second, starting from 99:58
+#   make FAST=1 START=9958 flash      test build: count once a second from 99:58, stored screen redrawn every 30 s
 #   make FULL_EVERY=10                partial updates between full refreshes (default 5)
 #   make preview DIGITS=1234 VBAT=298 TEMP=17   draw a screen on this Mac: build/preview.pbm
-#   make SLEEPMOCK=1 START=4207 flash   mock-up: the stored screen, stopped at 42:07 (no counting)
+#   make preview DIGITS=4207 VBAT=286 STORED=1   the stored screen, stopped at 42:07
 
-MCU     ?= msp430fr2111
+MCU     ?= msp430fr2422
 TI      ?= $(HOME)/ti
 GCC     ?= $(TI)/msp430-gcc/bin
 SUPPORT ?= $(TI)/msp430-gcc-support-files/include
 DSLITE  ?= /Applications/ti/ccs2101/ccs/ccs_base/DebugServer/bin/DSLite
 
-SRC   = src/main.c src/epd.c src/render.c src/sense.c
-BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))$(if $(DIAG),-diag)$(if $(LOOP),-loop)$(if $(SLEEPMOCK),-sleepmock)
+SRC   = src/main.c src/epd.c src/render.c src/sense.c src/timer.c
+BUILD = build/$(MCU)$(if $(FLIP),-flip$(FLIP))$(if $(FAST),-fast)$(if $(START),-from$(START))$(if $(FULL_EVERY),-full$(FULL_EVERY))$(if $(DIAG),-diag)$(if $(LOOP),-loop)
 
 # Test builds. START is hhmm; leading zeros are dropped so C doesn't read it as octal.
 # DIAG=1 logs each panel update in backup memory (see src/epd.c; `make readlog`); LOOP=1 refreshes back to back.
 DEFS = $(EXTRA) $(if $(FLIP),-DFLIP=$(FLIP)) $(if $(FAST),-DFAST=1) $(if $(FULL_EVERY),-DFULL_EVERY=$(FULL_EVERY)) \
-       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) $(if $(SLEEPMOCK),-DSLEEPMOCK=1 -DSTORED_SCREEN=2,-DSTORED_SCREEN=0) \
+       $(if $(DIAG),-DDIAG=1) $(if $(LOOP),-DLOOP=1) \
        $(if $(START),-DSTART=$(shell echo '$(START)' | sed 's/^0*\([0-9]\)/\1/'))
 
 CC   = $(GCC)/msp430-elf-gcc
@@ -50,7 +50,7 @@ size: $(ELF)
 # without the debugger: unplug the LaunchPad's USB and plug it back in, or run `make cycle` with the PPK2.
 flash: $(ELF)
 	$(DSLITE) flash --config=targets/$(MCU).ccxml --verbose --flash --verify --reset 1 $<
-	@echo "Flashed. The panel shows 00:00 but won't count until the board is power-cycled without the debugger."
+	@echo "Flashed. Power-cycle the board without the debugger before it will count or see the magnet."
 
 # Reads the DIAG log (backup memory 0x0660-0x066F). Attaching halts the chip: power-cycle afterwards.
 readlog:
@@ -68,8 +68,8 @@ preview:
 	build/preview $(DIGITS) $(VBAT) $(TEMP) $(if $(STORED),stored) > build/preview.pbm
 	@echo "build/preview.pbm"
 
-# PPK2 as the supply (see tools/ppk.py): `make cycle` switches it off and on, a clean power-up like the magnet
-# coming off; `make measure SECONDS=130` power-cycles and measures. VOLTS is the supply voltage.
+# PPK2 as the supply (see tools/ppk.py): `make cycle` switches it off and on, a clean power-up like fitting the
+# cells; `make measure SECONDS=130` power-cycles and measures. VOLTS is the supply voltage.
 VOLTS   ?= 3.0
 SECONDS ?= 10
 PY       = .venv/bin/python

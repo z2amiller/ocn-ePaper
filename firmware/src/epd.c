@@ -1,28 +1,19 @@
 // SPDX-License-Identifier: MIT
 // Good Display GDEY0213B74 driver: SSD1680 over 4-wire SPI, write-only.
 //
-// Wiring (board netlist): P1.4 CS, P1.5 SCLK (UCA0CLK), P1.6 D/C, P1.7 SDA (UCA0SIMO), P2.0 RES, P2.1 BUSY.
-// SPI uses eUSCI_A0 on its default pins (SYSCFG3.USCIARMP = 0); the board's serial port shares the block on
-// the remapped pins P1.2/P1.3 and isn't used here.
+// Wiring (board.h): P1.2 D/C, P1.3 CS, P1.4 SDA (UCA0SIMO), P1.5 BUSY, P1.6 SCLK (UCA0CLK), P1.7 RES. SPI
+// uses eUSCI_A0 on its default pins (SYSCFG3.USCIARMP = 0), transmit only: P1.5 would be its SOMI, but it
+// stays a plain input for BUSY.
 //
 // The command sequence follows GxEPD2's driver for this panel (GxEPD2_213_B74) and Good Display's demo code:
 // SW reset, 250 gate lines, X and Y incrementing, border waveform, display update control, internal
 // temperature sensor. Full refresh is update sequence 0xF7 (display mode 1), partial is 0xFF (display mode 2,
 // clock and analog off afterwards). Both RAMs are written every time (0x26 the previous count, 0x24 the new
 // one), so a partial update doesn't depend on what the panel kept through deep sleep.
-#include <msp430.h>
+#include "board.h"
 #include "epd.h"
 #include "render.h"
-
-#define CS    BIT4      // P1
-#define SCK   BIT5      // P1
-#define DC    BIT6      // P1
-#define SDA   BIT7      // P1
-#define RES   BIT0      // P2
-#define BUSY  BIT1      // P2
-
-// Timer_B0 runs from ACLK / 8 = 4096 Hz while the CPU sleeps in LPM3; times are in its ticks (16 s at most).
-#define TICKS(ms) ((uint16_t)(((uint32_t)(ms) * 4096u + 999u) / 1000u))
+#include "timer.h"
 
 #define RESET_TICKS       TICKS(10)      // RES low, then high, 10 ms each (Good Display's demo)
 #define BUSY_SHORT_TICKS  TICKS(200)     // reset and SW reset (typically a few ms)
@@ -30,10 +21,8 @@
 #define BUSY_FULL_TICKS   TICKS(10000)   // full refresh (about 3.5 s; longer in the cold)
 #define DURING_TICKS      TICKS(150)     // when epd_show's `during` callback runs, after the update starts
 
-static volatile uint8_t timed_out;
-
-// DIAG=1 builds log each update into backup memory bytes 8-15 (the count uses 0-4), for reading back with
-// `DSLite memory --config=targets/msp430fr2111.ccxml --range=0x0660,8 --size=16 --output=bk.bin`:
+// DIAG=1 builds log each update into backup memory bytes 8-15 (main.c uses 0-7 and 16 on), for reading back
+// with `make DIAG=1 readlog`:
 //   8      BUSY just after the hardware reset (1 = high)
 //   9      BUSY just after the update command (1 = high: the panel started an update)
 //   10     bit 0: BUSY low after the reset; bit 1: after the SW reset; bit 2: after the update
@@ -46,50 +35,25 @@ static volatile uint8_t timed_out;
 #define DG ((volatile uint8_t *)BKMEM_BASE)
 static uint16_t busy_ticks;             // how long the last wait_busy() waited
 
-static void timer_start(uint16_t ticks)
-{
-    timed_out = 0;
-    TB0CCR0 = ticks;
-    TB0CCTL0 = CCIE;
-    TB0CTL = TBSSEL__ACLK | ID__8 | MC__UP | TBCLR;
-}
-
-static void timer_stop(void)
-{
-    TB0CTL = 0;
-    TB0CCTL0 = 0;
-}
-
-static void sleep_ticks(uint16_t ticks)
-{
-    timer_start(ticks);
-    __disable_interrupt();
-    while (!timed_out) {
-        __bis_SR_register(LPM3_bits | GIE);      // the timer interrupt ends the sleep
-        __disable_interrupt();
-    }
-    __enable_interrupt();
-    timer_stop();
-}
-
-// Sleeps until BUSY falls (the panel is done) or the timeout runs out. Returns 1 if BUSY is low.
+// Sleeps until BUSY falls (the panel is done) or the timeout runs out. Returns 1 if BUSY is low. The Port 1
+// interrupt (main.c) ends the sleep when BUSY falls.
 static uint8_t wait_busy(uint16_t ticks)
 {
-    P2IES |= BUSY;                               // falling edge
-    P2IFG &= ~BUSY;
-    P2IE |= BUSY;
+    P1IES |= BUSY;                               // falling edge
+    P1IFG &= ~BUSY;
+    P1IE |= BUSY;
     timer_start(ticks);
     __disable_interrupt();
-    while ((P2IN & BUSY) && !timed_out) {        // checked with interrupts off, so an edge can't slip past
+    while ((P1IN & BUSY) && !timer_expired) {    // checked with interrupts off, so an edge can't slip past
         __bis_SR_register(LPM3_bits | GIE);
         __disable_interrupt();
     }
     __enable_interrupt();
-    busy_ticks = TB0R;
+    busy_ticks = timer_now();
     timer_stop();
-    P2IE &= ~BUSY;
-    P2IFG &= ~BUSY;
-    return !(P2IN & BUSY);
+    P1IE &= ~BUSY;
+    P1IFG &= ~BUSY;
+    return !(P1IN & BUSY);
 }
 
 static void spi_on(void)
@@ -97,7 +61,7 @@ static void spi_on(void)
     UCA0CTLW0 = UCSWRST;
     UCA0CTLW0 |= UCCKPH | UCMSB | UCMST | UCSYNC | UCMODE_0 | UCSSEL__SMCLK;   // mode 0, MSB first
     UCA0BRW = 2;                                 // SMCLK 8 MHz / 2 = 4 MHz (the SSD1680 takes 20 MHz)
-    SYSCFG3 &= ~USCIARMP;                        // SCLK on P1.5, SIMO on P1.7
+    SYSCFG3 &= ~USCIARMP;                        // SCLK on P1.6, SIMO on P1.4
     P1SEL0 |= SCK | SDA;
     UCA0CTLW0 &= ~UCSWRST;
 }
@@ -168,15 +132,15 @@ static void write_ram(uint8_t ram, const struct screen *s)
 
 uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t full, void (*during)(void))
 {
-    P2OUT &= ~RES;                               // hardware reset; also the way out of deep sleep
-    sleep_ticks(RESET_TICKS);
-    P2OUT |= RES;
-    sleep_ticks(RESET_TICKS);
-    if (DIAG) DG[8] = !!(P2IN & BUSY);
+    P1OUT &= ~RES;                               // hardware reset; also the way out of deep sleep
+    timer_sleep(RESET_TICKS);
+    P1OUT |= RES;
+    timer_sleep(RESET_TICKS);
+    if (DIAG) DG[8] = !!(P1IN & BUSY);
     spi_on();
     uint8_t ok1 = wait_busy(BUSY_SHORT_TICKS);
     CMD0(0x12);                                  // SW reset
-    sleep_ticks(RESET_TICKS);                    // "wait 10 ms" (Good Display's sequence), then for BUSY
+    timer_sleep(RESET_TICKS);                    // "wait 10 ms" (Good Display's sequence), then for BUSY
     uint8_t ok2 = wait_busy(BUSY_SHORT_TICKS);
     if (DIAG) { DG[12] = (uint8_t)busy_ticks; DG[13] = (uint8_t)(busy_ticks >> 8); }
     CMD(0x01, 0xF9, 0x00, 0x00);                 // driver output: 250 gate lines
@@ -200,10 +164,10 @@ uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t ful
     CMD0(0x20);                                  // go
     if (DIAG) {
         __delay_cycles(800);                     // ~100 us for BUSY to rise
-        DG[9] = !!(P2IN & BUSY);
+        DG[9] = !!(P1IN & BUSY);
     }
     if (during) {                                // a moment into the update, with the booster drawing current
-        sleep_ticks(DURING_TICKS);
+        timer_sleep(DURING_TICKS);
         during();
     }
     uint8_t ok3 = wait_busy(full ? BUSY_FULL_TICKS : BUSY_PART_TICKS);
@@ -219,16 +183,4 @@ uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t ful
                                                  // update anyway); the RAM-keeping sleep is 20 uA. BUSY stays high.
     spi_off();
     return ok;
-}
-
-void __attribute__((interrupt(TIMER0_B0_VECTOR))) timer_isr(void)
-{
-    timed_out = 1;
-    __bic_SR_register_on_exit(LPM3_bits);
-}
-
-void __attribute__((interrupt(PORT2_VECTOR))) port2_isr(void)
-{
-    (void)P2IV;                                  // clears the BUSY flag
-    __bic_SR_register_on_exit(LPM3_bits);
 }

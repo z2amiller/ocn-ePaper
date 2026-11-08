@@ -6,9 +6,9 @@
 // battery gauge and its voltage on the left and the temperature on the right, in a 5 x 7 font drawn at twice
 // size. The status line also says which way up the panel is, which 00:00 alone doesn't.
 //
-// The stored screen (STORED_SCREEN builds), read portrait: 122 across, 250 down, the MAGNET DISABLE end at the
-// bottom, for a unit stored upright. The stopped time small across the top, a placeholder for a graphic, and
-// the battery gauge and voltage at the bottom.
+// The stored screen, read portrait: 122 across, 250 down, the MAGNET DISABLE end at the bottom, for a unit
+// stored upright. The stopped time small across the top, a placeholder for a graphic, and the battery gauge
+// and voltage at the bottom.
 //
 // The panel's RAM is portrait: rows of 122 pixels, 250 rows. So each RAM row is one column of the landscape
 // picture, and one row of the portrait one. With FLIP=0, RAM row 0 is the landscape picture's right-hand
@@ -20,9 +20,6 @@
 
 #ifndef FLIP
 #define FLIP 0
-#endif
-#ifndef STORED_SCREEN
-#define STORED_SCREEN 1     // 1: both screens; 0: counting only (the firmware); 2: stored only (SLEEPMOCK)
 #endif
 
 #define W   250             // landscape width (columns), portrait height (rows)
@@ -46,7 +43,6 @@ static const struct geom big = {6, 80, 40, 5, {27, 73, 137, 183}, 121, 8, 26, 58
 #define VOLT_X    60        // the voltage, left-aligned
 #define TEMP_END  223       // the temperature, right-aligned to here
 
-#if STORED_SCREEN
 // The stored screen, in portrait coordinates.
 static const struct geom small = {10, 40, 22, 3, {7, 33, 67, 93}, 59, 4, 22, 38};
 #define PH_X0   6           // the placeholder for a graphic: an outlined, lightly hatched block
@@ -56,7 +52,6 @@ static const struct geom small = {10, 40, 22, 3, {7, 33, 67, 93}, 59, 4, 22, 38}
 #define P_STAT_Y  218       // battery gauge and voltage, centred
 #define P_BAT_X   18
 #define P_VOLT_X  52
-#endif
 
 enum { SA = 0x01, SB = 0x02, SC = 0x04, SD = 0x08, SE = 0x10, SF = 0x20, SG = 0x40 };
 static const uint8_t segments[10] = {
@@ -154,9 +149,12 @@ static void volts(uint16_t cv, uint8_t g[5])
     g[4] = G_V;
 }
 
+// Two CR2032s in parallel, read under the booster's load: fresh cells read about 2.8-2.9 V there, and their
+// resistance, which climbs with age and cold, pulls it down from there. Below about 2.4 V an update comes
+// close to the panel's 2.2 V minimum, so no bars means replace the cells.
 static uint8_t bars(uint16_t cv)
 {
-    return cv >= 290 ? 4 : cv >= 270 ? 3 : cv >= 250 ? 2 : cv >= 230 ? 1 : 0;
+    return cv >= 280 ? 4 : cv >= 265 ? 3 : cv >= 250 ? 2 : cv >= 240 ? 1 : 0;
 }
 
 static int16_t text_width(const uint8_t *g, uint8_t n)
@@ -197,7 +195,7 @@ static void battery(uint8_t *out, uint16_t cv, int16_t x)
     }
 }
 
-static __attribute__((unused)) void counting_column(const struct screen *s, int16_t x, uint8_t *out)
+static void counting_column(const struct screen *s, int16_t x, uint8_t *out)
 {
     for (uint8_t i = 0; i < 4; i++) {
         int16_t u = x - big.x[i];
@@ -225,7 +223,6 @@ static __attribute__((unused)) void counting_column(const struct screen *s, int1
     }
 }
 
-#if STORED_SCREEN
 // ---------- the stored screen, a portrait row at a time ----------
 // The same strokes as above, transposed: a horizontal stroke across one row, a vertical stroke's slice of it.
 // Read with the MAGNET DISABLE end at the bottom, portrait row y is landscape column y and portrait column c is
@@ -315,7 +312,6 @@ static void stored_row(const struct screen *s, int16_t y, uint8_t *out)
         text_row(out, g, 5, P_VOLT_X, v);
     }
 }
-#endif
 
 void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
 {
@@ -325,15 +321,9 @@ void render_row(const struct screen *s, uint8_t row, uint8_t out[EPD_ROW_BYTES])
 #else
     int16_t x = W - 1 - row;
 #endif
-#if STORED_SCREEN == 2                                          // a stored-screen-only build (SLEEPMOCK)
-    stored_row(s, x, out);                                      // portrait row = landscape column
-#else
-#if STORED_SCREEN
     if (s->stored) {
-        stored_row(s, x, out);
-        return;
+        stored_row(s, x, out);                                  // portrait row = landscape column
+    } else {
+        counting_column(s, x, out);
     }
-#endif
-    counting_column(s, x, out);
-#endif
 }

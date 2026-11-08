@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-// Supply voltage and die temperature from the ADC, as in TI's FR211x examples:
+// Supply voltage and die temperature from the ADC, as in TI's FR211x examples (the FR2422's ADC has the same
+// internal channels and factory calibration addresses):
 //   - supply: convert the internal 1.5 V reference (A13) against the supply (VR+ = DVCC), so
 //     DVCC = 1.5 V x 1023 / reading (msp430fr211x_adc10_05, "Lo_Batt");
 //   - temperature: convert the sensor (A12) against the 1.5 V reference and scale between the two factory
@@ -37,7 +38,7 @@ static void ref_off(void)
 }
 
 // a / b, for a quotient that fits in 16 bits: shift and subtract, so the library's 32-bit division routines
-// (about 200 bytes of the FR2111's 3.7 KB) stay out of the build.
+// (about 200 bytes) stay out of the build.
 static uint16_t udiv(uint32_t a, uint16_t b)
 {
     uint16_t q = 0;
