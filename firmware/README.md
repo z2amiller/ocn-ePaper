@@ -118,7 +118,9 @@ clock locked to the crystal, on eUSCI_A0's default pins, transmit only.
 - `src/sense.c`, `src/sense.h`: the supply voltage and the temperature from the ADC.
 - `src/timer.c`, `src/timer.h`: Timer_A0, for waits and timeouts in LPM3.
 - `tools/preview.c`: `make preview` draws the panel on the Mac as `build/preview.pbm`.
-- `tools/ppk.py`: drives a Nordic PPK2 as the supply and measures the current (from ocn-LCD).
+- `tools/ppk.py`: measures the current with a Nordic PPK2, supplying the board or in line with its cell, for
+  seconds or overnight: it reduces the samples as they arrive, logs a row a second and a row per wake, and
+  reports whenever it's stopped. Its notes give the wiring on revision 0.3.
 - `targets/msp430fr2422.ccxml`: the DSLite target config for a LaunchPad's eZ-FET programmer.
 
 ## Toolchain (macOS)
@@ -149,6 +151,15 @@ make DIAG=1 readlog               # ...and read it back (halts the chip: power-c
 make DIAG=1 LOOP=1 flash          # full refreshes back to back, for metering the booster
 make cycle                        # PPK2 power off and on: a clean power-up, like fitting the cell
 make measure SECONDS=130          # power-cycle, then measure current for 130 s
+```
+
+For a long run, call the script directly: it runs until Ctrl-C, keeps the Mac awake meanwhile, and writes
+`night-1s.csv`, `night-events.csv` and, when stopped, `night-report.txt`. `--ampere` is for the cell in line
+through a cut JP1 (wiring in `tools/ppk.py`); `--volts` is then the cell's own voltage.
+
+```
+.venv/bin/python tools/ppk.py --ampere --volts 3.05 --seconds 0 --every 60 --log night
+.venv/bin/python tools/ppk.py --summarize night   # the report again, from the CSVs
 ```
 
 Each variant builds into its own folder under `build/`; use `make -B` after changing `EXTRA`.
