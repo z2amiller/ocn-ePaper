@@ -8,7 +8,8 @@ Putting the magnet back stops the count and switches to the stored screen, which
 Adapted from the [ocn-LCD](https://github.com/z2amiller/ocn-LCD) firmware, which does the same on a segment
 LCD. The build is about 5.0 KB; the FR2422 has 7,296 bytes of FRAM and 2 KB of RAM.
 
-Status: ported to the FR2422 board (revision 0.3) on 2026-11-08. It builds, but hasn't run on that board yet.
+Status: running on the first revision 0.3 board (2026-11-24): counting, the stored screen and the 2 s magnet
+hold all work as described below. The weekly redraw and the brownout handling haven't been exercised on it yet.
 The FR2111 boards (revisions 0.1 and 0.2), where the magnet switches the power, run the firmware as of commit
 54b0ff0.
 
@@ -40,8 +41,10 @@ the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.
 - **The magnet** closes the reed switch, which pulls P1.0 (WAKE) high; R3 pulls it low otherwise. The chip
   stays powered either way. Before each sleep it arms Port 1 for the edge that would change the mode: rising
   while counting, falling while stored. Every wake, whatever caused it, compares the pin with the mode, so a
-  missed or bouncing edge can't leave them out of step. A change counts once the pin reads the same twice,
-  20 ms apart.
+  missed or bouncing edge can't leave them out of step. **A change takes a 2 s hold:** the reed has to stay in
+  its new position for 2 s, checked every 100 ms while the chip sleeps, before the mode changes. A magnet that
+  brushes past during a capture, or is fumbled for a moment during storage, changes nothing. The second case
+  matters most, because taking the magnet off starts a new count and the stopped time is lost.
 - **Counting** (magnet off). The RTC, clocked from the 32.768 kHz crystal, wakes the chip once a minute. Each
   wake wakes the panel with a hardware reset, sends it the old and the new count, and starts a partial update
   (about half a second at ~3.5 mA). After every five partial updates comes a full refresh (about 2.3 s; the
@@ -154,9 +157,9 @@ Each variant builds into its own folder under `build/`; use `make -B` after chan
   stays in the debugger's session after DSLite finishes, and in that state it doesn't wake from LPM3.5: it
   won't count or see the magnet. Unplug the LaunchPad's USB and plug it back in (or `make cycle` with the
   PPK2 as the supply).
-- **The magnet.** Bring it to the MAGNET DISABLE end: the count stops within a moment and the stored screen
-  comes up. Take it away and a new count starts from 00:00. `FAST=1` shows the stored screen's weekly redraw
-  every 30 s instead.
+- **The magnet.** Hold it at the MAGNET DISABLE end: after 2 s the count stops and the stored screen comes up.
+  Take it away, and 2 s later a new count starts from 00:00. A shorter touch, either way, changes nothing.
+  `FAST=1` shows the stored screen's weekly redraw every 30 s instead.
 - **Which way up.** With the board read with the MAGNET DISABLE end on the right, the digits should read
   upright. Nothing on the panel's drawing says which end its first RAM row is, so if they come out upside
   down, reflash with `FLIP=1`. The picture is never mirrored: the RAM order is the one GxEPD2 uses for this

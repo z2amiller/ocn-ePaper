@@ -18,8 +18,10 @@
 //     panel that keeps showing the same picture.
 //   - Taking the magnet off again starts a new count from 00:00, with a full refresh.
 // Port 1 wakes the chip on the WAKE edge that would change the mode. Every wake, whatever caused it, compares
-// the pin with the mode, so a missed or bouncing edge can't leave the two out of step; a change counts only
-// once the pin reads the same twice, 20 ms apart.
+// the pin with the mode, so a missed or bouncing edge can't leave the two out of step. A change counts only once
+// the reed has stayed in its new position for HOLD_MS (2 s), so a magnet that brushes past during a capture, or
+// is fumbled for a moment during storage, changes nothing: taking it off would otherwise start a new count and
+// lose the stopped time.
 //
 // Under the count, a status line shows the battery voltage and the chip's temperature. The temperature is
 // read at each wake, just before drawing. The battery is read in the middle of each update, while the panel's
@@ -59,6 +61,9 @@
 #endif
 
 // RTC tick = 1024 / 32768 s = 31.25 ms; the interrupt fires every RTCMOD + 1 ticks.
+#define HOLD_MS     2000    // the magnet has to stay on, or off, this long to change the mode
+#define HOLD_STEP   100     // ms between looks at the reed while it holds
+
 #define COUNT_MOD   (FAST ? 32 - 1 : 60 * 32 - 1)       // a minute (a second in FAST builds)
 #define STORE_MOD   (FAST ? 10 * 32 - 1 : 0xFFFF)       // 2,048 s, the longest the RTC can (10 s in FAST builds)
 #define STORE_WAKES (FAST ? 3 : 295)                     // stored screen redrawn every 295 x 2,048 s = 6.99 days
@@ -272,8 +277,21 @@ static uint8_t reed(void)
     return (P1IN & WAKE) ? 1 : 0;
 }
 
+// Whether the reed, now away from `level`, stays away for HOLD_MS: it's checked every HOLD_STEP ms, sleeping in
+// LPM3 between, and one look back at `level` calls the change off. Contact bounce is over long before the first
+// look; a magnet near the edge of its range, chattering, restarts the hold until it settles.
+static uint8_t held_away(uint8_t level)
+{
+    for (uint8_t i = 0; i < HOLD_MS / HOLD_STEP; i++) {
+        timer_sleep(TICKS(HOLD_STEP));
+        if (reed() == level) return 0;
+    }
+    return 1;
+}
+
 // Whether the magnet is on, once the reed has settled: the same reading twice, 20 ms apart. Gives up after
-// about half a second of chatter and goes with the last reading.
+// about half a second of chatter and goes with the last reading. Only power-up uses it: there's no mode yet for
+// a hold to protect.
 static uint8_t magnet(void)
 {
     uint8_t a = reed();
@@ -452,7 +470,7 @@ int main(void)
     // FAST builds where a full refresh takes longer than a count), else it goes back to sleep.
     for (;;) {
         uint8_t stored = BK_MODE == STORED;
-        if (reed() != stored && magnet() != stored) {
+        if (reed() != stored && held_away(stored)) {
             if (stored) {
                 start_count(1);
             } else {
