@@ -447,11 +447,13 @@ int main(void)
 
     if (!woke) {
         // An update still marked as under way never finished: the cell browned out during it. Draw nothing this
-        // time, so a cell that can't manage a refresh can't loop through them.
+        // time, so a cell that can't manage a refresh can't loop through them, but still put the panel's
+        // controller to sleep: it came up awake with the power, and would idle at ~16 uA until the next update.
         uint8_t draw = info[INFO_UPDATE] != UPDATING;
         if (!draw) info_write(INFO_UPDATE, 0);
         BK_VBAT = sense_vcc_cv();                // unloaded, so the first screen has a reading
         __enable_interrupt();
+        if (!draw) epd_sleep();
         if (magnet()) {
             uint8_t d[4];
             if (!load_stopped(d)) start_digits(d);

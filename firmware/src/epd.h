@@ -14,4 +14,9 @@
 // done (BUSY stuck high, as when no panel is connected).
 uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t full, void (*during)(void));
 
+// Puts the panel's controller into deep sleep without drawing anything. After its own power-up the controller
+// idles awake, at about 16 uA on the first revision 0.3 board, until it's told to sleep; epd_show() ends that
+// way, so this is only for a start that skips the first refresh. It never runs the booster.
+void epd_sleep(void);
+
 #endif

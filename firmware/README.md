@@ -63,9 +63,12 @@ the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.
   last stopped time from FRAM (00:00 on a new chip).
 - **A brownout partway through an update.** A cold or aged CR2032 sags most during a full refresh, and if it
   falls far enough the supervisor resets the chip. FRAM marks each update as under way until it finishes, and a
-  start that finds the mark draws nothing, so a cell that can't manage a refresh can't loop through them. The
-  next update tries again, a minute later while counting or a week later while stored. This also means a start
-  after a reset in the middle of an update (a debugger, say) leaves the panel alone once; power-cycle again.
+  start that finds the mark draws nothing, so a cell that can't manage a refresh can't loop through them. It
+  does still send the panel's controller to sleep, without running the booster: the controller comes up awake
+  with the power and idles at about 16 µA until told to sleep (measured on the first revision 0.3 board, where
+  a start like that sat at 16 µA until the next minute's update). The next update tries again, a minute later
+  while counting or a week later while stored. This also means a start after a reset in the middle of an
+  update (a debugger, say) leaves the picture alone once; power-cycle again.
 - While the panel works, the chip waits in LPM3 for BUSY to fall, with Timer_A0 as a timeout, so a missing or
   stuck panel costs a few seconds per update, not a flat cell.
 - The supply supervisor (SVSH) stays on in LPM3.5, at about 0.24 µA. If the cell ever sags below ~1.8 V, it

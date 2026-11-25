@@ -130,12 +130,27 @@ static void write_ram(uint8_t ram, const struct screen *s)
     end();
 }
 
-uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t full, void (*during)(void))
+// Hardware reset: the way out of deep sleep, and a known state after the panel's own power-up.
+static void reset_panel(void)
 {
-    P1OUT &= ~RES;                               // hardware reset; also the way out of deep sleep
+    P1OUT &= ~RES;
     timer_sleep(RESET_TICKS);
     P1OUT |= RES;
     timer_sleep(RESET_TICKS);
+}
+
+void epd_sleep(void)
+{
+    reset_panel();
+    spi_on();
+    (void)wait_busy(BUSY_SHORT_TICKS);
+    CMD(0x10, 0x03);                             // deep sleep mode 2, as at the end of epd_show
+    spi_off();
+}
+
+uint8_t epd_show(const struct screen *old, const struct screen *now, uint8_t full, void (*during)(void))
+{
+    reset_panel();
     if (DIAG) DG[8] = !!(P1IN & BUSY);
     spi_on();
     uint8_t ok1 = wait_busy(BUSY_SHORT_TICKS);
