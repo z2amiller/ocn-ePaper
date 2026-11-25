@@ -49,7 +49,12 @@ the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.
   wake wakes the panel with a hardware reset, sends it the old and the new count, and starts a partial update
   (about half a second at ~3.5 mA). After every five partial updates comes a full refresh (about 2.3 s; the
   panel flashes black and white), which clears the ghosting that partial updates leave. Then the panel goes
-  back into deep sleep, where it draws about 1 µA. 99:59 is drawn with a full refresh, then the RTC stops.
+  back into deep sleep, where it draws about 1 µA.
+- **At 99:59** the count stops, drawn with a full refresh. The RTC then drops to the stored mode's wakes every
+  34 minutes, and the 99:59 screen is drawn again about weekly, with a fresh status line, so a board left there
+  doesn't keep one picture unrefreshed for months; once the battery reads empty those redraws stop, as in
+  storage. The magnet still works: hold it on and the stored screen shows 99:59. `FAST=1 START=9958` reaches
+  99:59 within seconds and redraws every 30 s.
 - **Stored** (magnet on). The count stops where it is, including any minute the RTC counted that the panel
   hadn't shown yet, and the stored screen shows it with a full refresh. The stopped time also goes into the
   chip's information FRAM, which keeps it through any reset and with no cell fitted. The RTC then wakes the

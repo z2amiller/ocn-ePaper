@@ -11,7 +11,9 @@
 // either way, so it sees the magnet come and go:
 //   - Magnet off: counting. The RTC wakes the chip once a minute. Each minute is a partial update (about
 //     0.8 s, 1 mC); after every FULL_EVERY of those comes a full refresh (about 2.3 s), which clears the
-//     ghosting partial updates leave. 99:59 is drawn with a full refresh, then the RTC stops.
+//     ghosting partial updates leave. 99:59 is drawn with a full refresh and then stays: the RTC drops to the
+//     stored mode's 34-minute wakes, and the same count is drawn again about weekly, so the panel never keeps
+//     one picture for months unrefreshed. The magnet still stores it.
 //   - Magnet on: stored. The count stops where it is and the stored screen shows it, drawn with a full
 //     refresh. The RTC then wakes the chip every 34 minutes, the longest it can, and after STORE_WAKES of those
 //     (about a week) the stored screen is drawn again: Good Display asks for a full refresh about weekly on a
@@ -254,13 +256,6 @@ static uint8_t rtc_halt(void)
     return dropped;
 }
 
-static void rtc_stop(void)
-{
-    __disable_interrupt();
-    (void)rtc_halt();
-    __enable_interrupt();
-}
-
 // Restarts the RTC to interrupt every mod + 1 ticks from now. Returns the interrupts it dropped, as rtc_halt().
 static uint8_t rtc_every(uint16_t mod)
 {
@@ -306,6 +301,31 @@ static uint8_t magnet(void)
 
 // ---------- the two modes ----------
 
+// 99:59 reached: there's nothing more to count, but a picture left on the panel still wants a full refresh about
+// weekly. So the RTC drops to the stored mode's 2,048 s wakes, and frozen_wake() draws the count again every
+// STORE_WAKES of them. The mode stays counting, so the magnet still stores it.
+static void freeze(void)
+{
+    (void)rtc_every(STORE_MOD);
+    BK_STORE_WAKES = 0;
+}
+
+// One RTC interrupt while frozen at 99:59: every STORE_WAKES of them, the same count with a full refresh and a
+// fresh status line. A cell that already reads empty skips it, as in storage.
+static void frozen_wake(void)
+{
+    if (++BK_STORE_WAKES < STORE_WAKES) return;
+    BK_STORE_WAKES = 0;
+    if (BK_VBAT < BATTERY_EMPTY_CV) return;
+    struct screen s;
+    load_digits(s.d);
+    s.vbat_cv = BK_VBAT;
+    s.temp_c = sense_temp_c();
+    s.stored = 0;
+    show(&s, &s, 1);
+    show_status(&s);
+}
+
 // Starts a count from 00:00 (START in a test build), drawn with a full refresh unless `draw` is 0.
 static void start_count(uint8_t draw)
 {
@@ -315,7 +335,7 @@ static void start_count(uint8_t draw)
     BK_PARTIALS = 0;
     BK_MODE = COUNTING;
     if (at_end(start)) {
-        rtc_stop();
+        freeze();
     } else {
         (void)rtc_every(COUNT_MOD);              // counting starts now, before the refresh
     }
@@ -328,14 +348,14 @@ static void start_count(uint8_t draw)
     show_status(&now);
 }
 
-// One RTC interrupt while counting: the next minute, drawn.
+// One RTC interrupt while counting: the next minute, drawn; or, frozen at 99:59, one of the slow wakes.
 static void count_minute(void)
 {
     struct screen now, old;
     load_digits(now.d);
     for (uint8_t i = 0; i < 4; i++) old.d[i] = now.d[i];
     if (!advance(now.d)) {
-        rtc_stop();                              // frozen: no more wakes
+        frozen_wake();
         return;
     }
     save_digits(now.d);
@@ -348,7 +368,7 @@ static void count_minute(void)
     BK_PARTIALS = full ? 0 : BK_PARTIALS + 1;
     show(&old, &now, full);
     show_status(&now);
-    if (at_end(now.d)) rtc_stop();               // 99:59 is on the panel, cleanly: no more wakes
+    if (at_end(now.d)) freeze();                 // 99:59 is on the panel, cleanly: weekly redraws from here
 }
 
 static void draw_stored(void)
