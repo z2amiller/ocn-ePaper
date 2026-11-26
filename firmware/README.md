@@ -13,25 +13,27 @@ hold all work as described below. The weekly redraw and the brownout handling ha
 The FR2111 boards (revisions 0.1 and 0.2), where the magnet switches the power, run the firmware as of commit
 54b0ff0.
 
-## Measured on the first board
+## Measured on revision 0.3
 
-These are from revision 0.1 (FR2111, a CR123A, the magnet switching the power), with a Nordic PPK2 supplying
-3.0 V in place of the cell. The panel and its booster are the same on revision 0.3, so the updates should cost
-about the same.
+On the first revision 0.3 board, at room temperature, with a fresh CR2032 (3.05 V) in its holder and a Nordic
+PPK2 in line with it through a cut JP1 (`tools/ppk.py --ampere`):
 
 | | Charge | Time | Peak |
 |---|---|---|---|
-| Partial update (each minute) | 1.04 mC | 0.8 s | 58 mA |
-| Full refresh (every sixth update) | 3.25 mC | 2.3 s | 59 mA |
-| Power-up, including the crystal start and a full refresh | 3.44 mC | 2.4 s | 59 mA |
-| Asleep between updates | about 0.4 µA | | |
+| Partial update (each minute) | 1.10 mC | 0.8 s | 59 mA |
+| Full refresh (every sixth update, each switch of screen, the weekly redraw) | 3.28 mC | 2.3 s | 60 mA |
+| Power-up, before the first full refresh | 0.1 mC | 0.25 s | |
+| RTC wake while stored, every 2,048 s | 0.37 µC | 1.8 ms | |
+| Asleep between updates, counting | about 0.6 µA | | |
+| Stored, between wakes | 0.93 µA | | |
 
 That averages about 24 µA while counting, over the six-minute cycle of five partial updates and a full
-refresh. The updates are nearly all of it: one partial update costs as much as about 40 minutes asleep.
+refresh. The updates are nearly all of it: one partial update costs as much as about half an hour asleep.
 
-Stored, revision 0.3 should draw about 0.7-0.9 µA: 0.4-0.6 µA asleep (0.4 measured on the FR2111; the
-FR2422's datasheet gives 0.63 µA typical for LPM3.5 with the crystal and SVS), plus 0.3 µA through R3 while
-the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.01 µA.
+Stored averages 0.94 µA: about 0.6 µA for the chip and the sleeping panel, 0.31 µA through R3 while the
+magnet holds WAKE high, and well under 0.01 µA for the wakes and the weekly redraw. That is about 8.2 mAh a
+year, and over a 9.3-hour run every hour averaged between 0.925 and 0.940 µA. The board's
+[README](../README.md#power) turns these into cell life.
 
 ## How it works
 
@@ -47,7 +49,7 @@ the magnet holds WAKE high. The weekly redraw of the stored screen adds about 0.
   matters most, because taking the magnet off starts a new count and the stopped time is lost.
 - **Counting** (magnet off). The RTC, clocked from the 32.768 kHz crystal, wakes the chip once a minute. Each
   wake wakes the panel with a hardware reset, sends it the old and the new count, and starts a partial update
-  (about half a second at ~3.5 mA). After every five partial updates comes a full refresh (about 2.3 s; the
+  (about 0.8 s, 1.1 mC). After every five partial updates comes a full refresh (about 2.3 s; the
   panel flashes black and white), which clears the ghosting that partial updates leave. Then the panel goes
   back into deep sleep, where it draws about 1 µA.
 - **At 99:59** the count stops, drawn with a full refresh. The RTC then drops to the stored mode's wakes every
